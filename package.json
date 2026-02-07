@@ -1,0 +1,18 @@
+{
+  "name": "chavesporto",
+  "version": "1.0.0",
+  "description": "Sistema de Controle de Chaves SENAI",
+  "main": "backend/server.js",
+  "scripts": {
+    "dev": "cd backend && npm run dev",
+    "start": "cd backend && node server.js",
+    "build": "cd backend && npm install",
+    "vercel-build": "cd backend && npm install"
+  },
+  "keywords": ["chaves", "controle", "senai"],
+  "author": "Seu Nome",
+  "license": "MIT",
+  "engines": {
+    "node": "18.x"
+  }
+}

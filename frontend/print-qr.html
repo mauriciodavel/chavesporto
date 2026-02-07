@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imprimir QR-Codes - Controle de Chaves</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f5f5;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #FF6B35;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    button:hover {
+      background-color: #e55a2b;
+    }
+
+    button.secondary {
+      background-color: #666;
+    }
+
+    button.secondary:hover {
+      background-color: #555;
+    }
+
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .qr-card {
+      border: 2px solid #ddd;
+      padding: 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+      page-break-inside: avoid;
+      background: #fafafa;
+    }
+
+    .qr-card h3 {
+      margin-bottom: 1rem;
+      color: #333;
+      font-size: 1.1rem;
+    }
+
+    .qr-card img {
+      max-width: 200px;
+      width: 100%;
+      margin: 1rem 0;
+      border: 1px solid #ddd;
+      padding: 10px;
+      background: white;
+    }
+
+    .qr-card p {
+      font-size: 0.9rem;
+      color: #666;
+      margin: 0.5rem 0;
+      word-break: break-all;
+    }
+
+    .qr-code {
+      font-family: monospace;
+      font-size: 0.75rem;
+      background: #f0f0f0;
+      padding: 0.5rem;
+      border-radius: 4px;
+      margin: 0.5rem 0;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #999;
+    }
+
+    .error {
+      background-color: #fee;
+      border: 1px solid #fcc;
+      color: #c33;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .success {
+      background-color: #efe;
+      border: 1px solid #cfc;
+      color: #3c3;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .container {
+        box-shadow: none;
+      }
+
+      .toolbar {
+        display: none;
+      }
+
+      .qr-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🖨️ Imprimir QR-Codes das Chaves</h1>
+
+    <div class="toolbar">
+      <button onclick="printPage()">📄 Imprimir Tudo</button>
+      <button class="secondary" onclick="downloadAllQR()">💾 Baixar Imagens</button>
+      <button class="secondary" onclick="location.href='/'">⬅️ Voltar</button>
+    </div>
+
+    <div id="statusMessage"></div>
+    <div id="qrContainer" class="loading">Carregando QR-Codes...</div>
+  </div>
+
+  <script>
+    const API_BASE = '';  // Usar mesma origem
+
+    async function loadQrCodes() {
+      try {
+        const token = localStorage.getItem('auth_token');  // Corrigido: era 'token', agora é 'auth_token'
+        if (!token) {
+          showError('Você precisa fazer login primeiro');
+          return;
+        }
+
+        const response = await fetch(`${API_BASE}/api/qr/for-printing`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Erro ao carregar chaves');
+        }
+
+        const result = await response.json();
+        const keys = result.data || [];
+
+        if (keys.length === 0) {
+          showError('Nenhuma chave encontrada. Crie chaves no painel admin primeiro!');
+          return;
+        }
+
+        // Filtrar chaves com QR-Code
+        const keysWithQR = keys.filter(k => k.qr_code_image);
+
+        if (keysWithQR.length === 0) {
+          showError('Nenhuma chave com QR-Code encontrado');
+          return;
+        }
+
+        showSuccess(`${keysWithQR.length} QR-Code(s) encontrado(s)`);
+        renderQRCodes(keysWithQR);
+
+      } catch (error) {
+        console.error('Erro:', error);
+        showError(`Erro ao carregar: ${error.message}`);
+      }
+    }
+
+    function renderQRCodes(keys) {
+      const container = document.getElementById('qrContainer');
+      container.innerHTML = '';
+
+      if (!keys || keys.length === 0) {
+        container.innerHTML = '<p style="color: #999; text-align: center;">Nenhuma chave para exibir</p>';
+        container.className = '';
+        return;
+      }
+
+      keys.forEach(key => {
+        const card = document.createElement('div');
+        card.className = 'qr-card';
+        
+        // Debugar imagem
+        const hasImage = key.qr_code_image && key.qr_code_image.length > 50;
+        
+        card.innerHTML = `
+          <h3>${key.environment}</h3>
+          <p>${key.description || 'Sem descrição'}</p>
+          ${hasImage ? `<img src="${key.qr_code_image}" alt="QR Code" style="width: 100%; max-width: 200px;">` : '<div style="color: #999; text-align: center; padding: 2rem;">❌ Sem imagem</div>'}
+          <div class="qr-code">${key.qr_code}</div>
+          <p style="font-size: 0.8rem; color: #999;">
+            Localização: ${key.location}
+          </p>
+        `;
+        container.appendChild(card);
+      });
+
+      // Mudar classe para grid
+      container.className = 'qr-grid';
+    }
+
+    function showError(message) {
+      const msg = document.getElementById('statusMessage');
+      msg.innerHTML = `<div class="error">❌ ${message}</div>`;
+    }
+
+    function showSuccess(message) {
+      const msg = document.getElementById('statusMessage');
+      msg.innerHTML = `<div class="success">✅ ${message}</div>`;
+    }
+
+    function printPage() {
+      window.print();
+    }
+
+    async function downloadAllQR() {
+      try {
+        const cards = document.querySelectorAll('.qr-card');
+        for (const card of cards) {
+          const img = card.querySelector('img');
+          const environment = card.querySelector('h3').textContent;
+          const link = document.createElement('a');
+          link.href = img.src;
+          link.download = `${environment.replace(/[^a-z0-9]/gi, '_')}_qrcode.png`;
+          link.click();
+          // Pequeno delay para evitar problemas
+          await new Promise(r => setTimeout(r, 500));
+        }
+      } catch (error) {
+        alert('Erro ao baixar: ' + error.message);
+      }
+    }
+
+    // Carregar QR-Codes ao abrir a página
+    window.addEventListener('load', loadQrCodes);
+  </script>
+</body>
+</html>

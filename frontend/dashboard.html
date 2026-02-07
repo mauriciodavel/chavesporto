@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Controle de Chaves</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .dashboard {
+      min-height: 100vh;
+      background-color: var(--accent-color);
+    }
+
+    .dashboard-header {
+      background: linear-gradient(135deg, var(--secondary-color), #3a3a3a);
+      padding: 2rem;
+      border-bottom: 3px solid var(--primary-color);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .dashboard-header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .dashboard-title h1 {
+      font-size: 2rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .dashboard-title p {
+      color: #999;
+      font-size: 0.875rem;
+    }
+
+    .dashboard-user-info {
+      text-align: right;
+    }
+
+    .dashboard-user-info .user-name {
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .dashboard-user-info .user-area {
+      color: #999;
+      font-size: 0.875rem;
+    }
+
+    .btn-logout {
+      margin-top: 0.5rem;
+    }
+
+    .dashboard-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .dashboard-info {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .info-card {
+      flex: 1;
+      min-width: 200px;
+      background-color: var(--secondary-color);
+      padding: 1rem;
+      border-radius: var(--border-radius);
+      border-left: 4px solid var(--primary-color);
+    }
+
+    .info-card-label {
+      color: #999;
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .info-card-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .keys-section h2 {
+      margin-bottom: 1rem;
+      color: var(--light-text);
+    }
+
+    .keys-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .key-card {
+      background-color: var(--secondary-color);
+      border: 2px solid #3a3a3a;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: var(--transition);
+      overflow: hidden;
+    }
+
+    .key-card:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-6px);
+      box-shadow: 0 8px 20px rgba(255, 140, 0, 0.2);
+    }
+
+    .key-card-icon {
+      width: 100%;
+      height: 80px;
+      background: linear-gradient(135deg, var(--primary-color), #FF7700);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+
+    .key-card-content {
+      padding: 1.5rem;
+    }
+
+    .key-card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--primary-color);
+    }
+
+    .key-card-info {
+      font-size: 0.875rem;
+      color: #999;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .key-card-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.available {
+      background-color: var(--success-color);
+    }
+
+    .status-dot.in-use {
+      background-color: var(--danger-color);
+    }
+
+    .key-card-button {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .key-card-button:hover {
+      background-color: #FF7700;
+    }
+
+    .key-card-button:disabled {
+      background-color: #666;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    /* QR Scanner Modal */
+    .qr-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .qr-modal.show {
+      display: flex;
+    }
+
+    .qr-modal-content {
+      background-color: var(--secondary-color);
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    .qr-scanner-container {
+      width: 100%;
+      margin: 1rem 0;
+      background-color: #1a1a1a;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    #qrVideo {
+      width: 100%;
+      display: none;
+    }
+
+    .qr-file-input {
+      display: none;
+    }
+
+    .qr-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .history-section {
+      background-color: var(--secondary-color);
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      margin-top: 2rem;
+    }
+
+    .history-section h2 {
+      margin-bottom: 1rem;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .history-table th {
+      background-color: #3a3a3a;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--primary-color);
+      border-bottom: 2px solid var(--primary-color);
+    }
+
+    .history-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #3a3a3a;
+    }
+
+    .history-table tr:hover {
+      background-color: #333;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #999;
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-header-content {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .dashboard-user-info {
+        text-align: center;
+      }
+
+      .keys-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      }
+
+      .history-table {
+        font-size: 0.875rem;
+      }
+
+      .history-table th, .history-table td {
+        padding: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Header -->
+    <div class="dashboard-header">
+      <div class="dashboard-header-content">
+        <div class="dashboard-title">
+          <h1>Controle de Chaves 🔑</h1>
+          <p>SENAI - Gestão de Ambientes</p>
+        </div>
+        <div class="dashboard-user-info">
+          <div class="user-name" id="userName">Carregando...</div>
+          <div class="user-area" id="userArea">-</div>
+          <button class="btn btn-sm btn-secondary btn-logout" id="logoutBtn">Sair</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="dashboard-content">
+      <!-- Info Cards -->
+      <div class="dashboard-info">
+        <div class="info-card">
+          <div class="info-card-label">Chaves Disponíveis</div>
+          <div class="info-card-value" id="availableCount">0</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">Chaves em Uso</div>
+          <div class="info-card-value" id="inUseCount">0</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">Total de Chaves</div>
+          <div class="info-card-value" id="totalCount">0</div>
+        </div>
+      </div>
+
+      <!-- Keys Section -->
+      <div class="keys-section">
+        <h2>Chaves Disponíveis</h2>
+        <div class="keys-grid" id="keysContainer">
+          <div class="empty-state">
+            <div class="empty-state-icon">⏳</div>
+            <p>Carregando chaves...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Section -->
+      <div class="history-section">
+        <h2>Meu Histórico de Retiradas</h2>
+        <div id="historyContainer">
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <p>Nenhum registro encontrado</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Modal -->
+    <div class="qr-modal" id="qrModal">
+      <div class="qr-modal-content">
+        <h3 id="qrModalTitle">Escanear QR-Code</h3>
+        <p id="qrModalSubtitle" style="color: #999; margin-bottom: 1rem;">-</p>
+
+        <div class="qr-scanner-container">
+          <video id="qrVideo" playsinline></video>
+          <div id="qrPlaceholder" style="display: flex; align-items: center; justify-content: center; height: 300px; color: #999; font-size: 2rem;">
+            📷
+          </div>
+        </div>
+
+        <div id="qrResult" style="display: none; padding: 1rem; background-color: #3a3a3a; border-radius: 8px; margin: 1rem 0;">
+          <div style="color: #999; font-size: 0.875rem; margin-bottom: 0.5rem;">Chave encontrada:</div>
+          <div id="qrResultText" style="color: var(--primary-color); font-weight: 600;"></div>
+        </div>
+
+        <div class="qr-buttons">
+          <button class="btn btn-primary btn-sm" id="startCameraBtn">Ativar Câmera</button>
+          <button class="btn btn-secondary btn-sm" id="uploadQrBtn">Fazer Upload de Imagem</button>
+          <button class="btn btn-secondary btn-sm" id="cancelQrBtn">Cancelar</button>
+        </div>
+
+        <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
+
+        <div id="qrStatus" style="margin-top: 1rem; color: #999; font-size: 0.875rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/timezone.js"></script>
+  <script src="js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

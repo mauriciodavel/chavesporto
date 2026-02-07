@@ -1,0 +1,127 @@
+#!/bin/bash
+# REFERÊNCIA RÁPIDA - CHAVESPORTO
+# ================================
+
+# 🚀 INICIAR SISTEMA
+=====================================
+
+# Terminal 1 - Backend
+cd chavesporto
+npm run dev
+
+# Terminal 2 - Frontend
+nada (já está sendo servido por http://localhost:3000)
+
+# 🌐 ACESSAR
+=====================================
+
+# Dashboard (Instructor)
+http://localhost:3000/dashboard
+
+# Admin Panel (Admin)
+http://localhost:3000/admin
+
+# Login Padrão - Instructor
+Matrícula: 3-02919
+Senha: senai123
+
+# Login Admin
+Email: admin@senai.com.br
+Senha: admin123
+
+
+# 🧪 TESTES RÁPIDOS
+=====================================
+
+# Ciclo completo (Retirar → Devolver → Verificar)
+node scripts/test-complete-cycle.js
+
+# Verificar histórico
+node scripts/test-authenticated-history.js
+
+# Teste de devolução simples
+node scripts/test-return-key-simple.js
+
+# Teste de retirada
+node scripts/test-live-withdraw.js
+
+
+# 📊 MONITORAMENTO
+=====================================
+
+# Ver logs do backend
+Ctrl+C para parar, npm run dev para reiniciar
+
+# Ver logs do frontend (Browser Console)
+F12 → Console tab → Buscar por 🔄 Dashboard auto-refresh
+
+# Ver banco de dados (Supabase)
+https://supabase.com → seu-projeto → SQL Editor
+
+
+# 🔧 CONFIGURAÇÕES RÁPIDAS
+=====================================
+
+# Auto-refresh interval
+Frontend/js/admin.js linha 50:
+  setInterval(() => { loadDashboardData(); }, 15000); // 15 segundos
+
+# Fuso horário
+Frontend/js/timezone.js:
+  timeZone: 'America/Sao_Paulo' // Brasília
+
+
+# 📝 ARQUIVOS PRINCIPAIS
+=====================================
+
+Backend:
+  backend/controllers/keyController.js ← Lógica de retirada/devolução
+  backend/controllers/historyController.js ← Visualizar histórico
+  backend/utils/dateNormalizer.js ← Converte datas Supabase
+
+Frontend:
+  frontend/js/admin.js ← Admin panel + auto-refresh
+  frontend/js/dashboard.js ← Dashboard instructor + auto-refresh
+  frontend/js/timezone.js ← Formatação de datas para Brasília
+  frontend/css/admin.css ← Estilos admin
+
+
+# 🟢 FEATURES IMPLEMENTADAS
+=====================================
+
+✅ Auto-refresh Dashboard (15s)
+✅ Auto-refresh Admin Panel (15s)
+✅ Admin consegue devolver qualquer chave
+✅ Histórico sincroniza após devolução
+✅ Datas em timezone Brasília
+✅ Fallback para coluna observation ausente
+
+
+# ❌ SE ALGO NÃO FUNCIONAR
+=====================================
+
+Erro: "Cannot find /history"
+→ npm run dev (reiniciar backend)
+
+Erro: "Token inválido"
+→ Fazer login novamente
+
+Erro: 500 na devolução
+→ Backend crashed? Verificar console do servidor
+
+Histórico não atualiza:
+→ Aguardar 15 segundos (auto-refresh)
+→ Ou F5 para refresh manual
+
+Timeline/datas erradas:
+→ Verificar System Time (Windows Settings)
+→ Ou fazer reset de cache: Ctrl+Shift+Delete
+
+
+# 📞 CONTATO
+=====================================
+
+Sistema: CHAVESPORTO v2.0
+Última atualização: Fevereiro 2026
+Status: ✅ 100% OPERACIONAL
+

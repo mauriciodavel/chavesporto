@@ -1,0 +1,192 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║              ✅ CHECKLIST PRÉ-DEPLOY - VERCEL                                ║
+║                                                                               ║
+║              Verifique tudo abaixo antes de fazer deploy                     ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+🔍 ARQUIVOS DE CONFIGURAÇÃO
+═══════════════════════════════════════════════════════════════════════════════════
+
+  [ ] vercel.json existe na raiz
+      └─ Configura rotas e build para Vercel
+
+  [ ] .env.production existe na raiz
+      └─ Template com variáveis de ambiente
+
+  [ ] .gitignore atualizado
+      └─ Inclui .env, node_modules, .vercel
+
+  [ ] package.json na raiz existe
+      └─ Scripts para Vercel (build, start, vercel-build)
+
+  [ ] backend/package.json tem todas dependências
+      └─ express, cors, supabase, dotenv, nodemailer
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+📦 CÓDIGO
+═══════════════════════════════════════════════════════════════════════════════════
+
+  [ ] backend/server.js usa process.env.PORT
+      └─ const PORT = process.env.PORT || 3000;
+
+  [ ] Todas rotas funcionam localmente
+      └─ npm run dev em backend/
+
+  [ ] frontend/admin.html existe e funciona
+      └─ Login e painel de controle
+
+  [ ] frontend/dashboard.html existe e funciona
+      └─ Dashboard do instructor
+
+  [ ] Autenticação JWT funciona
+      └─ Login retorna token
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+🔑 VARIÁVEIS DE AMBIENTE
+═══════════════════════════════════════════════════════════════════════════════════
+
+  [ ] SUPABASE_URL está correto
+      └─ https://seu-projeto.supabase.co
+
+  [ ] SUPABASE_KEY é pública (Ok compartilhar)
+      └─ sb_publishable_...
+
+  [ ] SUPABASE_SERVICE_KEY está seguro
+      └─ NUNCA compartilhe este!
+
+  [ ] JWT_SECRET configurado
+      └─ Chave aleatória longa
+
+  [ ] SMTP_HOST = smtp.gmail.com
+  [ ] SMTP_PORT = 587
+  [ ] SMTP_USER e SMTP_PASS
+  [ ] ALERT_EMAIL
+
+  [ ] Todas variáveis do .env.production estão prontas
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+🐙 GIT & GITHUB
+═══════════════════════════════════════════════════════════════════════════════════
+
+  [ ] Git inicializado localmente
+      └─ git init já feito
+
+  [ ] Todos arquivos adicionados
+      └─ git add .
+
+  [ ] Commit feito
+      └─ git commit -m "Deploy inicial"
+
+  [ ] Repositório criado no GitHub
+      └─ https://github.com/novo/chavesporto
+
+  [ ] Remote configurado
+      └─ git remote add origin ...
+
+  [ ] Push feito para main
+      └─ git push -u origin main
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+🚀 VERCEL
+═══════════════════════════════════════════════════════════════════════════════════
+
+  [ ] Conta Vercel criada
+      └─ https://vercel.com
+
+  [ ] GitHub conectado ao Vercel
+      └─ via Settings → Connected Accounts
+
+  [ ] Repositório importado no Vercel
+      └─ "New Project" → chavesporto
+
+  [ ] Todas variáveis de ambiente adicionadas
+      └─ Settings → Environment Variables
+
+  [ ] Build completou com sucesso
+      └─ Ver logs em Deployments
+
+  [ ] Site está online
+      └─ URL fornecida pelo Vercel
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+✅ TESTES FINAIS
+═══════════════════════════════════════════════════════════════════════════════════
+
+  [ ] Login funciona com credenciais padrão
+      └─ admin@senai.com.br / admin123
+
+  [ ] Dashboard instructor carrega
+      └─ /dashboard após login
+
+  [ ] Admin panel funciona
+      └─ /admin após login de admin
+
+  [ ] Pode retirar uma chave
+      └─ Lista de chaves carrega
+
+  [ ] Pode devolver uma chave
+      └─ Observação é salva
+
+  [ ] Histórico mostra transações
+      └─ Status 'DEVOLVIDA' após devolução
+
+  [ ] Auto-refresh funciona
+      └─ Tabela atualiza a cada 15s
+
+  [ ] Datas estão em Brasília timezone
+      └─ Formato correto (07/02/2026)
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+🎯 APÓS DEPLOY
+═══════════════════════════════════════════════════════════════════════════════════
+
+  [ ] Dominiopersonalizado apontando para Vercel (opcional)
+      └─ Settings → Domains
+
+  [ ] GitHub Actions configurado para auto-deploy (opcional)
+      └─ Cada push = novo deploy
+
+  [ ] Backups do banco Supabase configurados
+      └─ https://supabase.com/dashboard
+
+  [ ] Monitoramento/Logs habilitados
+      └─ Vercel → Analytics
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+📝 NOTAS IMPORTANTES
+═══════════════════════════════════════════════════════════════════════════════════
+
+⚠️  NÃO FAÇA PUSH DE:
+    └─ .env (arquivo local)
+    └─ node_modules/ (será instalado no Vercel)
+    └─ Arquivos sensíveis
+
+✅ SEMPRE VERIFIQUE:
+    └─ Variáveis de ambiente no Vercel (não no Git)
+    └─ Logs de erro no painel Vercel
+    └─ Console do browser (F12) para erros frontend
+
+🔒 SEGURANÇA:
+    └─ SUPABASE_SERVICE_KEY: NUNCA compartilhe
+    └─ JWT_SECRET: NUNCA exponha
+    └─ SMTP_PASS: NUNCA commitee
+
+
+═══════════════════════════════════════════════════════════════════════════════════
+
+Se todos os ✅ estão marcados, você está pronto para fazer deploy!
+
+Vá para: DEPLOY_VERCEL.md para instruções detalhadas
+
+═══════════════════════════════════════════════════════════════════════════════════
