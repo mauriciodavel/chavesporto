@@ -7,11 +7,6 @@
     "NODE_ENV": "production",
     "PORT": "3000"
   },
-  "functions": {
-    "backend/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
