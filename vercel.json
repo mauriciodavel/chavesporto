@@ -6,27 +6,5 @@
   "env": {
     "NODE_ENV": "production",
     "PORT": "3000"
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/backend/server.js?path=$1"
-    },
-    {
-      "source": "/dashboard",
-      "destination": "/frontend/dashboard.html"
-    },
-    {
-      "source": "/admin",
-      "destination": "/frontend/admin.html"
-    },
-    {
-      "source": "/print-qr",
-      "destination": "/frontend/print-qr.html"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/frontend/index.html"
-    }
-  ]
+  }
 }
