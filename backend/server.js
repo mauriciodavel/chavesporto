@@ -22,6 +22,9 @@ const qrRoutes = require('./routes/qr');
 const testRoutes = require('./routes/test');
 const setupRoutes = require('./routes/setup');
 
+// Importar jobs
+const { checkLateReturns } = require('./jobs/checkLateReturns');
+
 // Usar rotas
 app.use('/api/auth', authRoutes);
 app.use('/api/keys', keyRoutes);
@@ -62,6 +65,22 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
+// Inicializar job de verificação de devoluções em atraso
+// Executa a cada 30 minutos para verificar chaves não devolvidas
+if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.ALERT_EMAIL) {
+  console.log('📧 Email service iniciado - verificando devoluções em atraso a cada 30 minutos');
+  
+  // Executar uma vez ao iniciar
+  checkLateReturns();
+  
+  // Agendar para rodar a cada 30 minutos (1800000 ms)
+  setInterval(() => {
+    checkLateReturns();
+  }, 30 * 60 * 1000);
+} else {
+  console.log('⚠️  Email service DESATIVADO - configure SMTP_HOST, SMTP_USER, ALERT_EMAIL para ativar');
+}
 
 // Exportar para Vercel
 module.exports = app;
