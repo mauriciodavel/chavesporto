@@ -1,6 +1,6 @@
 // Test script para validar envio de emails - teste-email.js
-const emailService = require('./utils/emailService');
-require('dotenv').config();
+require('dotenv').config(); // Carregar variáveis PRIMEIRO
+const emailService = require('../utils/emailService');
 
 async function testEmailService() {
   console.log('\n📧 TESTE DE ENVIO DE EMAIL - CHAVESPORTO\n');
@@ -21,6 +21,7 @@ async function testEmailService() {
   console.log(`✓ SMTP_PORT: ${process.env.SMTP_PORT}`);
   console.log(`✓ SMTP_USER: ${process.env.SMTP_USER}`);
   console.log(`✓ ALERT_EMAIL: ${process.env.ALERT_EMAIL}`);
+  console.log(`✓ SMTP_PASS: ${process.env.SMTP_PASS ? '****' + process.env.SMTP_PASS.slice(-4) : 'VAZIO'}`);
   
   // Dados simulados para teste
   const mockKeyInfo = {
@@ -72,13 +73,19 @@ async function testEmailService() {
     }
   } catch (error) {
     console.error('\n❌ ERRO ao enviar email:');
-    console.error(error.message);
+    console.error(`Mensagem: ${error.message}`);
+    console.error(`Código: ${error.code}`);
     console.log('\n' + '=' .repeat(50));
     console.log('Dicas de resolução:');
-    console.log('  • Verifique a conexão com SMTP_HOST');
-    console.log('  • Verifique credenciais SMTP_USER/SMTP_PASS');
-    console.log('  • Se usar Gmail: https://myaccount.google.com/apppasswords');
+    console.log('  • Verifique conexão com SMTP_HOST: ' + process.env.SMTP_HOST);
+    console.log('  • Verifique SMTP_USER: ' + process.env.SMTP_USER);
+    console.log('  • Se usar Gmail:');
+    console.log('    1. Ative autenticação de 2 fatores');
+    console.log('    2. Gere App Password: https://myaccount.google.com/apppasswords');
+    console.log('    3. Cole a senha gerada (16 caracteres com espaços)');
     console.log('  • Se usar outro email, verifique configurações SMTP');
+    console.log('\nErro completo:');
+    console.error(error);
     process.exit(1);
   }
 }

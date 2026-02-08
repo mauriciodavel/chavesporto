@@ -3,13 +3,19 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
   constructor() {
+    const port = parseInt(process.env.SMTP_PORT || '587');
+    
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_PORT === '465',
+      port: port,
+      secure: port === 465, // true for 465, false for other ports (587 needs TLS)
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
+      },
+      // Adicionar opções de TLS para porta 587
+      tls: {
+        rejectUnauthorized: false // Permite certificados auto-assinados
       }
     });
   }
@@ -23,11 +29,12 @@ class EmailService {
         html: this.getHtmlTemplate(keyInfo, instructorInfo)
       };
 
-      await this.transporter.sendMail(mailOptions);
-      console.log(`Email enviado para ${process.env.ALERT_EMAIL}`);
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Email enviado para ${process.env.ALERT_EMAIL}`);
+      console.log(`   Resposta do servidor: ${info.response}`);
       return true;
     } catch (error) {
-      console.error('Erro ao enviar email:', error);
+      console.error('❌ Erro ao enviar email:', error.message);
       return false;
     }
   }
