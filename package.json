@@ -2,10 +2,10 @@
   "name": "chavesporto",
   "version": "1.0.0",
   "description": "Sistema de Controle de Chaves SENAI",
-  "main": "backend/server.js",
+  "main": "server.js",
   "scripts": {
     "dev": "cd backend && npm run dev",
-    "start": "cd backend && node server.js",
+    "start": "node server.js",
     "build": "cd backend && npm install",
     "vercel-build": "cd backend && npm install"
   },

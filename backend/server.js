@@ -63,7 +63,13 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-  console.log(`Acesse http://localhost:${PORT}`);
-});
+// Exportar para Vercel
+module.exports = app;
+
+// Iniciar servidor localmente
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`Acesse http://localhost:${PORT}`);
+  });
+}
