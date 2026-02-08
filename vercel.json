@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm install",
+  "buildCommand": "",
+  "installCommand": "npm install && cd backend && npm install",
   "devCommand": "cd backend && npm run dev",
   "env": {
     "NODE_ENV": "production",
