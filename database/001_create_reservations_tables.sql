@@ -137,17 +137,20 @@ ALTER TABLE key_availability ENABLE ROW LEVEL SECURITY;
 -- Instrutores podem ver suas próprias reservas
 CREATE POLICY "Instructors can see their own reservations"
   ON key_reservations FOR SELECT
-  USING (instructor_id = current_user_id() OR role = 'admin');
+  USING (
+    instructor_id = auth.uid() OR 
+    EXISTS (SELECT 1 FROM instructors WHERE id = auth.uid() AND role = 'admin')
+  );
 
 -- Instrutores podem criar reservas para si
 CREATE POLICY "Instructors can create their own reservations"
   ON key_reservations FOR INSERT
-  WITH CHECK (instructor_id = current_user_id());
+  WITH CHECK (instructor_id = auth.uid());
 
 -- Admins podem atualizar reservas (para aprovar/rejeitar)
 CREATE POLICY "Admins can update reservations"
   ON key_reservations FOR UPDATE
-  USING (role = 'admin');
+  USING (EXISTS (SELECT 1 FROM instructors WHERE id = auth.uid() AND role = 'admin'));
 
 -- Política para key_permissions
 -- Todos podem ler permissões (para saber se podem retirar)
@@ -158,7 +161,7 @@ CREATE POLICY "Everyone can view permissions"
 -- Apenas admins podem criar permissões
 CREATE POLICY "Only admins can create permissions"
   ON key_permissions FOR INSERT
-  WITH CHECK (role = 'admin');
+  WITH CHECK (EXISTS (SELECT 1 FROM instructors WHERE id = auth.uid() AND role = 'admin'));
 
 -- Política para environment_maintenance
 -- Todos podem ler (para saber quais chaves estão em manutenção)
@@ -169,7 +172,7 @@ CREATE POLICY "Everyone can view maintenance"
 -- Apenas admins podem gerenciar manutenção
 CREATE POLICY "Only admins can manage maintenance"
   ON environment_maintenance FOR INSERT
-  WITH CHECK (role = 'admin');
+  WITH CHECK (EXISTS (SELECT 1 FROM instructors WHERE id = auth.uid() AND role = 'admin'));
 
 -- Política para key_availability
 -- Todos podem ler disponibilidade
