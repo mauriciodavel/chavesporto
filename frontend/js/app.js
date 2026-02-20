@@ -93,20 +93,86 @@ class ApiClient {
   }
 }
 
-// Utilidade para exibir alertas
+// Utilidade para exibir alertas com modal
 function showAlert(containerId, message, type = 'danger') {
-  const container = document.getElementById(containerId);
-  if (!container) return;
+  // Tentar usar modal se disponível
+  const modalOverlay = document.getElementById('modalOverlay');
+  
+  if (modalOverlay) {
+    // Usar sistema de modal
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modalIcon = document.getElementById('modalIcon');
+    const modalOkBtn = document.getElementById('modalOkBtn');
+    
+    // Converter tipo de alert para tipo de modal
+    let typeMap = {
+      'danger': 'error',
+      'success': 'success',
+      'warning': 'warning',
+      'alert': 'error'
+    };
+    let modalType = typeMap[type] || type;
+    
+    // Configurar título, ícone e estilo baseado no tipo
+    switch(modalType) {
+      case 'success':
+        modalTitle.textContent = '✅ Sucesso';
+        modalIcon.textContent = '✅';
+        modalIcon.className = 'modal-icon modal-icon-success';
+        break;
+      case 'error':
+        modalTitle.textContent = '❌ Erro';
+        modalIcon.textContent = '❌';
+        modalIcon.className = 'modal-icon modal-icon-error';
+        break;
+      case 'warning':
+        modalTitle.textContent = '⚠️ Aviso';
+        modalIcon.textContent = '⚠️';
+        modalIcon.className = 'modal-icon modal-icon-warning';
+        break;
+      default:
+        modalTitle.textContent = 'ℹ️ Informação';
+        modalIcon.textContent = 'ℹ️';
+        modalIcon.className = 'modal-icon modal-icon-info';
+    }
+    
+    // Definir mensagem
+    modalBody.innerHTML = message;
+    
+    // Mostrar modal
+    modalOverlay.classList.add('show');
+    
+    // Remover evento anterior de clique
+    const newOkBtn = modalOkBtn.cloneNode(true);
+    modalOkBtn.parentNode.replaceChild(newOkBtn, modalOkBtn);
+    
+    // Adicionar novo listener
+    newOkBtn.addEventListener('click', () => {
+      modalOverlay.classList.remove('show');
+    });
+    
+    // Fechar também ao clicar no overlay
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) {
+        modalOverlay.classList.remove('show');
+      }
+    });
+  } else {
+    // Fallback para sistema de alerta antigo
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-  const alert = document.createElement('div');
-  alert.className = `alert alert-${type}`;
-  alert.innerHTML = `
-    <div style="flex: 1;">${message}</div>
-    <button style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.25rem; padding: 0;" onclick="this.parentElement.remove()">&times;</button>
-  `;
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.innerHTML = `
+      <div style="flex: 1;">${message}</div>
+      <button style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.25rem; padding: 0;" onclick="this.parentElement.remove()">&times;</button>
+    `;
 
-  container.innerHTML = '';
-  container.appendChild(alert);
+    container.innerHTML = '';
+    container.appendChild(alert);
+  }
 }
 
 function clearAlert(containerId) {

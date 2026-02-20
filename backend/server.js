@@ -21,6 +21,8 @@ const instructorRoutes = require('./routes/instructors');
 const qrRoutes = require('./routes/qr');
 const testRoutes = require('./routes/test');
 const setupRoutes = require('./routes/setup');
+const reservationRoutes = require('./routes/reservationRoutes');
+const blockoutRoutes = require('./routes/blockouts');
 
 // Importar jobs
 const { checkLateReturns } = require('./jobs/checkLateReturns');
@@ -33,6 +35,8 @@ app.use('/api/instructors', instructorRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/setup', setupRoutes);
+app.use('/api/reservations', reservationRoutes);
+app.use('/api/blockouts', blockoutRoutes);
 
 // Rota raiz - servir login.html
 app.get('/', (req, res) => {
@@ -52,6 +56,21 @@ app.get('/admin', (req, res) => {
 // Rota para imprimir QR-Codes
 app.get('/print-qr', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/print-qr.html'));
+});
+
+// Rota para reservar chave (usuário)
+app.get('/reservar-chave', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/reservar-chave.html'));
+});
+
+// Rota para admin gerenciar reservas
+app.get('/admin-reservas', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/admin-reservas.html'));
+});
+
+// Rota para admin gerenciar bloqueios de calendário
+app.get('/admin-blockouts', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/admin-blockouts.html'));
 });
 
 // Tratamento de erros

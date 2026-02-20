@@ -2,8 +2,34 @@ const supabase = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const { normalizeSupabaseRecords, normalizeSupabaseRecord, normalizeSupabaseDate } = require('../utils/dateNormalizer');
+const { isWithinAnyWithdrawWindow, isWithinWithdrawWindow, getWithdrawWindowInfo } = require('../utils/shiftTimes');
 
 exports.getAllKeys = async (req, res) => {
+  try {
+    const userRole = req.user?.role;
+    const instructorId = req.user?.id;
+
+    // Se for admin, retorna TODAS as chaves sem filtro de horário
+    if (userRole === 'admin') {
+      return await fetchAllKeys(res);
+    }
+
+    // Se for usuário comum, retorna apenas chaves dentro da janela de retirada
+    return await fetchAvailableKeysForUser(res, instructorId);
+  } catch (error) {
+    console.error('Erro ao buscar chaves:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar chaves',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Busca todas as chaves (sem filtro de horário) - para admin
+ */
+const fetchAllKeys = async (res) => {
   try {
     const { data: keys, error } = await supabase
       .from('keys')
@@ -23,7 +49,6 @@ exports.getAllKeys = async (req, res) => {
           .order('withdrawn_at', { ascending: false })
           .limit(1);
 
-        // Se há histórico, pega o primeiro (não usar .single())
         const activeHistory = !historyError && history && history.length > 0 ? history[0] : null;
 
         return {
@@ -35,7 +60,188 @@ exports.getAllKeys = async (req, res) => {
         };
       } catch (err) {
         console.error(`Erro ao buscar histórico para chave ${key.id}:`, err);
-        // Retornar a chave sem histórico em caso de erro
+        return {
+          ...key,
+          lastActivity: null
+        };
+      }
+    }));
+
+    res.json({
+      success: true,
+      data: keysWithActivity,
+      admin: true
+    });
+  } catch (error) {
+    console.error('Erro ao buscar todas as chaves:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar chaves',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Busca chaves disponíveis para o usuário (com filtro de horário)
+ * Inclui chaves disponíveis E chaves com reserva aprovada
+ */
+const fetchAvailableKeysForUser = async (res, instructorId) => {
+  try {
+    // Verificar se está dentro de alguma janela de retirada
+    const isAvailableNow = isWithinAnyWithdrawWindow();
+    const windowInfo = getWithdrawWindowInfo();
+
+    // Obter data de hoje em formato YYYY-MM-DD (Brasília)
+    // Usando Intl.DateTimeFormat com locale en-CA que retorna em formato ISO
+    const today = new Date();
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: 'America/Sao_Paulo'
+    });
+    const todayString = formatter.format(today);
+
+    console.log('📅 Data de hoje (Brasília):', todayString, 'Hora atual:', windowInfo.currentTime);
+
+    // 1. Buscar APENAS reservas aprovadas para este instrutor que incluam hoje
+    const { data: reservations, error: reservError } = await supabase
+      .from('key_reservations')
+      .select('*, keys(*)')
+      .eq('instructor_id', instructorId)
+      .eq('status', 'approved')
+      .lte('reservation_start_date', todayString)
+      .gte('reservation_end_date', todayString);
+
+    if (reservError) throw reservError;
+
+    console.log(`📋 Reservas encontradas para ${instructorId} em ${todayString}:`, reservations?.length || 0);
+    
+    // 2. Filtrar apenas as reservas que estão dentro da janela de retirada do turno
+    const keysToDisplay = [];
+
+    if (reservations && reservations.length > 0) {
+      for (const reservation of reservations) {
+        // Verificar se o horário atual está dentro da janela de retirada do turno da reserva
+        console.log(`   📍 Verificando turno "${reservation.shift}" para chave "${reservation.keys?.environment}"...`);
+        if (isWithinWithdrawWindow(reservation.shift)) {
+          console.log(`   ✅ Turno "${reservation.shift}" está dentro da janela - ADICIONANDO chave`);
+
+          if (reservation.keys) {
+            keysToDisplay.push({
+              ...reservation.keys,
+              reservedUntil: `${todayString} ${reservation.shift}`,
+              hasReservation: true
+            });
+          }
+        } else {
+          console.log(`   ❌ Turno "${reservation.shift}" está FORA da janela de retirada - NÃO adicionando`);
+        }
+      }
+    }
+
+    console.log(`📦 Total de chaves a exibir: ${keysToDisplay.length} (só com reserva aprovada dentro da janela)`);
+
+    // Se não há reservas válidas no horário
+    if (keysToDisplay.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        withdrawalStatus: {
+          available: false,
+          currentTime: windowInfo.currentTime,
+          reservedToday: reservations && reservations.length > 0,
+          message: reservations && reservations.length > 0
+            ? 'Chaves reservadas fora do horário permitido agora'
+            : 'Fora do horário permitido para retirada de chaves'
+        }
+      });
+    }
+
+    // Enriquecer cada chave com informações da última atividade
+    const keysWithActivity = await Promise.all(keysToDisplay.map(async (key) => {
+      try {
+        const { data: history, error: historyError } = await supabase
+          .from('key_history')
+          .select('*, instructors(name)')
+          .eq('key_id', key.id)
+          .eq('status', 'active')
+          .order('withdrawn_at', { ascending: false })
+          .limit(1);
+
+        const activeHistory = !historyError && history && history.length > 0 ? history[0] : null;
+
+        return {
+          ...key,
+          lastActivity: activeHistory ? {
+            instructor: activeHistory.instructors?.name,
+            withdrawnAt: normalizeSupabaseDate(activeHistory.withdrawn_at)
+          } : null
+        };
+      } catch (err) {
+        console.error(`Erro ao buscar histórico para chave ${key.id}:`, err);
+        return {
+          ...key,
+          lastActivity: null
+        };
+      }
+    }));
+
+    res.json({
+      success: true,
+      data: keysWithActivity,
+      admin: false,
+      withdrawalStatus: {
+        available: true,
+        currentTime: windowInfo.currentTime,
+        availableShifts: windowInfo.availableShifts,
+        message: 'Chaves disponíveis para retirada'
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar chaves disponíveis:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar chaves',
+      error: error.message
+    });
+  }
+};
+
+exports.getAllKeysUnfiltered = async (req, res) => {
+  try {
+    // Retorna TODAS as chaves independente de status ou horário
+    // Usado para página de reservas onde usuário precisa ver todas as chaves
+    const { data: keys, error } = await supabase
+      .from('keys')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Enriquecer cada chave com informações da última atividade
+    const keysWithActivity = await Promise.all(keys.map(async (key) => {
+      try {
+        const { data: history, error: historyError } = await supabase
+          .from('key_history')
+          .select('*, instructors(name)')
+          .eq('key_id', key.id)
+          .eq('status', 'active')
+          .order('withdrawn_at', { ascending: false })
+          .limit(1);
+
+        const activeHistory = !historyError && history && history.length > 0 ? history[0] : null;
+
+        return {
+          ...key,
+          lastActivity: activeHistory ? {
+            instructor: activeHistory.instructors?.name,
+            withdrawnAt: normalizeSupabaseDate(activeHistory.withdrawn_at)
+          } : null
+        };
+      } catch (err) {
+        console.error(`Erro ao buscar histórico para chave ${key.id}:`, err);
         return {
           ...key,
           lastActivity: null
@@ -48,7 +254,7 @@ exports.getAllKeys = async (req, res) => {
       data: keysWithActivity
     });
   } catch (error) {
-    console.error('Erro ao buscar chaves:', error);
+    console.error('Erro ao buscar todas as chaves:', error);
     res.status(500).json({
       success: false,
       message: 'Erro ao buscar chaves',
@@ -256,6 +462,7 @@ exports.withdrawKey = async (req, res) => {
   try {
     const { id } = req.params;
     const instructorId = req.user.id;
+    const userRole = req.user.role;
 
     // Buscar chave
     const { data: key } = await supabase
@@ -276,6 +483,20 @@ exports.withdrawKey = async (req, res) => {
         success: false,
         message: 'Chave não está disponível para retirada'
       });
+    }
+
+    // Validar horário para admins - PERMITIR sempre
+    // Para usuários comuns - VALIDAR se está dentro da janela de retirada
+    if (userRole !== 'admin') {
+      const isAvailableNow = isWithinAnyWithdrawWindow();
+      if (!isAvailableNow) {
+        const windowInfo = getWithdrawWindowInfo();
+        return res.status(403).json({
+          success: false,
+          message: 'Fora do horário permitido para retirada de chaves',
+          details: windowInfo
+        });
+      }
     }
 
     // Atualizar status da chave

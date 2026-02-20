@@ -110,6 +110,13 @@
 
     .forgot-password a {
       color: var(--primary-color);
+      cursor: pointer;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .forgot-password a:hover {
+      text-decoration: underline;
     }
 
     .alert {
@@ -124,6 +131,119 @@
       display: inline-block;
     }
 
+    /* ========== RESET PASSWORD MODAL ========== */
+    .reset-password-modal {
+      display: none;
+    }
+
+    .reset-password-modal.show {
+      display: flex;
+    }
+
+    .reset-form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .reset-form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--light-text);
+      font-size: 0.9rem;
+    }
+
+    .reset-form-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #444;
+      border-radius: 6px;
+      background-color: #3a3a3a;
+      color: var(--light-text);
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+
+    .reset-form-group input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1);
+    }
+
+    .reset-tabs-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid #3a3a3a;
+    }
+
+    .reset-tab-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      background: transparent;
+      color: #999;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: var(--transition);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+    }
+
+    .reset-tab-btn.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+
+    .reset-modal-body-content {
+      display: none;
+    }
+
+    .reset-modal-body-content.active {
+      display: block;
+    }
+
+    .reset-form-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .reset-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+
+    .reset-btn-primary {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .reset-btn-primary:hover {
+      background: #ff7000;
+    }
+
+    .reset-btn-primary:disabled {
+      background: #666;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .reset-btn-secondary {
+      background: #444;
+      color: white;
+    }
+
+    .reset-btn-secondary:hover {
+      background: #555;
+    }
+
     @media (max-width: 768px) {
       .login-box {
         padding: 2rem;
@@ -133,9 +253,127 @@
         grid-template-columns: 1fr;
       }
     }
+    
+    /* ========== MODAL POPUP ========== */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: var(--secondary-color);
+        border: 2px solid var(--primary-color);
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+        font-size: 24px;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--light-text);
+        margin: 0;
+    }
+
+    .modal-body {
+        font-size: 15px;
+        color: var(--light-text);
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .modal-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: var(--transition);
+    }
+
+    .modal-btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .modal-btn-primary:hover {
+        background: #ff7000;
+        transform: scale(1.05);
+    }
+
+    .modal-icon-success {
+        color: #4CAF50;
+    }
+
+    .modal-icon-error {
+        color: #f44336;
+    }
+
+    .modal-icon-warning {
+        color: #FFC107;
+    }
+
+    .modal-icon-info {
+        color: var(--primary-color);
+    }
   </style>
 </head>
 <body>
+  <!-- MODAL POPUP -->
+  <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-content">
+          <div class="modal-header">
+              <span id="modalIcon" class="modal-icon"></span>
+              <h2 class="modal-title" id="modalTitle">Mensagem</h2>
+          </div>
+          <div class="modal-body" id="modalBody"></div>
+          <div class="modal-footer">
+              <button type="button" class="modal-btn modal-btn-primary" id="modalOkBtn">OK</button>
+          </div>
+      </div>
+  </div>
+
   <div class="login-container">
     <div class="login-wrapper">
       <div class="login-box">
@@ -176,6 +414,10 @@
             >
           </div>
 
+          <div class="forgot-password">
+            <a onclick="showResetPasswordModal('instructor')">Esqueceu a senha?</a>
+          </div>
+
           <button type="submit" class="btn btn-primary btn-lg login-button">
             <span class="btn-text">Entrar</span>
             <span class="loading-spinner">
@@ -210,6 +452,10 @@
             >
           </div>
 
+          <div class="forgot-password">
+            <a onclick="showResetPasswordModal('admin')">Esqueceu a senha?</a>
+          </div>
+
           <button type="submit" class="btn btn-primary btn-lg login-button">
             <span class="btn-text">Entrar</span>
             <span class="loading-spinner">
@@ -225,6 +471,201 @@
     </div>
   </div>
 
+  <!-- MODAL: RESET PASSWORD -->
+  <div class="modal-overlay reset-password-modal" id="resetPasswordModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-icon" style="font-size: 2rem;">🔐</span>
+        <h2 class="modal-title">Redefinir Senha</h2>
+      </div>
+
+      <div class="modal-body">
+        <!-- Tabs para Instrutor/Admin -->
+        <div class="reset-tabs-buttons">
+          <button type="button" class="reset-tab-btn active" data-reset-tab="instructor" onclick="switchResetTab('instructor')">
+            Instrutor
+          </button>
+          <button type="button" class="reset-tab-btn" data-reset-tab="admin" onclick="switchResetTab('admin')">
+            Admin
+          </button>
+        </div>
+
+        <!-- Tab: Instrutor -->
+        <div id="resetTabInstructor" class="reset-modal-body-content active">
+          <p style="font-size: 0.9rem; color: #ccc; margin-bottom: 1rem;">
+            Digite sua matrícula para receber um link de redefinição de senha
+          </p>
+          <div class="reset-form-group">
+            <label for="resetInstructorMatricula">Matrícula</label>
+            <input 
+              type="text" 
+              id="resetInstructorMatricula" 
+              placeholder="Ex: 12345"
+            >
+          </div>
+          <div id="resetInstructorAlert"></div>
+        </div>
+
+        <!-- Tab: Admin -->
+        <div id="resetTabAdmin" class="reset-modal-body-content">
+          <p style="font-size: 0.9rem; color: #ccc; margin-bottom: 1rem;">
+            Digite seu email para receber um link de redefinição de senha
+          </p>
+          <div class="reset-form-group">
+            <label for="resetAdminEmail">Email</label>
+            <input 
+              type="email" 
+              id="resetAdminEmail" 
+              placeholder="seu@email.com"
+            >
+          </div>
+          <div id="resetAdminAlert"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="reset-form-buttons" style="width: 100%; gap: 1rem;">
+          <button type="button" class="reset-btn reset-btn-primary" id="resetSendBtn" onclick="sendResetEmail()">
+            Enviar Link
+          </button>
+          <button type="button" class="reset-btn reset-btn-secondary" onclick="closeResetPasswordModal()">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/app.js"></script>
+  <script>
+    // ========== RESET PASSWORD FUNCTIONALITY ==========
+    let currentResetTab = 'instructor';
+
+    function showResetPasswordModal(tab) {
+      currentResetTab = tab;
+      const modal = document.getElementById('resetPasswordModal');
+      modal.classList.add('show');
+      
+      // Limpar campos
+      document.getElementById('resetInstructorMatricula').value = '';
+      document.getElementById('resetAdminEmail').value = '';
+      document.getElementById('resetInstructorAlert').innerHTML = '';
+      document.getElementById('resetAdminAlert').innerHTML = '';
+      
+      // Mostrar a aba correta
+      if (tab === 'instructor') {
+        switchResetTab('instructor');
+      } else {
+        switchResetTab('admin');
+      }
+    }
+
+    function closeResetPasswordModal() {
+      const modal = document.getElementById('resetPasswordModal');
+      modal.classList.remove('show');
+    }
+
+    function switchResetTab(tab) {
+      currentResetTab = tab;
+      
+      // Atualizar abas
+      document.querySelectorAll('.reset-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.querySelector(`[data-reset-tab="${tab}"]`).classList.add('active');
+      
+      // Atualizar conteúdo
+      document.querySelectorAll('.reset-modal-body-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(`resetTab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+    }
+
+    async function sendResetEmail() {
+      const btn = document.getElementById('resetSendBtn');
+      btn.disabled = true;
+
+      try {
+        let endpoint, payload, alertDiv;
+
+        if (currentResetTab === 'instructor') {
+          const matricula = document.getElementById('resetInstructorMatricula').value.trim();
+          alertDiv = document.getElementById('resetInstructorAlert');
+          
+          if (!matricula) {
+            showResetAlert(alertDiv, 'Por favor, informe sua matrícula', 'error');
+            btn.disabled = false;
+            return;
+          }
+          
+          endpoint = '/api/auth/forgot-password/instructor';
+          payload = { matricula };
+        } else {
+          const email = document.getElementById('resetAdminEmail').value.trim();
+          alertDiv = document.getElementById('resetAdminAlert');
+          
+          if (!email || !email.includes('@')) {
+            showResetAlert(alertDiv, 'Por favor, informe um email válido', 'error');
+            btn.disabled = false;
+            return;
+          }
+          
+          endpoint = '/api/auth/forgot-password/admin';
+          payload = { email };
+        }
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showResetAlert(alertDiv, '✅ Email enviado com sucesso! Verifique sua caixa de entrada', 'success');
+          setTimeout(() => {
+            closeResetPasswordModal();
+          }, 2000);
+        } else {
+          showResetAlert(alertDiv, `❌ ${data.message || 'Erro ao enviar email'}`, 'error');
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        const alertDiv = currentResetTab === 'instructor' 
+          ? document.getElementById('resetInstructorAlert')
+          : document.getElementById('resetAdminAlert');
+        showResetAlert(alertDiv, '❌ Erro ao processar solicitação', 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function showResetAlert(alertDiv, message, type) {
+      alertDiv.innerHTML = `
+        <div style="
+          padding: 0.75rem;
+          border-radius: 6px;
+          margin-top: 1rem;
+          font-size: 0.9rem;
+          ${type === 'success' 
+            ? 'background-color: rgba(76, 175, 80, 0.1); color: #4CAF50; border: 1px solid rgba(76, 175, 80, 0.3);'
+            : 'background-color: rgba(244, 67, 54, 0.1); color: #f44336; border: 1px solid rgba(244, 67, 54, 0.3);'
+          }
+        ">
+          ${message}
+        </div>
+      `;
+    }
+
+    // Fechar modal ao clicar fora
+    document.getElementById('resetPasswordModal').addEventListener('click', (e) => {
+      if (e.target.id === 'resetPasswordModal') {
+        closeResetPasswordModal();
+      }
+    });
+  </script>
 </body>
 </html>

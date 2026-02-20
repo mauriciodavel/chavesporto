@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciar Bloqueios de Calendário - Chavesporto</title>
+  <style>
+    :root {
+      --primary-color: #FF8C00;
+      --secondary-color: #2a2a2a;
+      --accent-color: #1a1a1a;
+      --light-text: #f0f0f0;
+      --dark-text: #333;
+      --border-radius: 12px;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--accent-color);
+      color: var(--light-text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    p {
+      color: var(--light-text);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: var(--secondary-color);
+      padding: 20px 30px;
+      border-radius: var(--border-radius);
+      margin-bottom: 30px;
+      box-shadow: var(--box-shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid var(--primary-color);
+    }
+
+    header h1 {
+      color: var(--light-text);
+      font-size: 28px;
+    }
+
+    .btn-back {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+
+    .btn-back:hover {
+      background-color: #ff7600;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .form-section {
+      background: var(--secondary-color);
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      border: 1px solid #3a3a3a;
+    }
+
+    .form-section h2 {
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      font-size: 20px;
+      border-bottom: 2px solid var(--primary-color);
+      padding-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--light-text);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input[type="date"],
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #444;
+      border-radius: 5px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: var(--transition);
+      background: #3a3a3a;
+      color: var(--light-text);
+    }
+
+    input[type="date"]:focus,
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 5px rgba(255, 140, 0, 0.3);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .type-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .type-option {
+      padding: 10px;
+      border: 2px solid #444;
+      border-radius: 5px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.3s;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .type-option:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary-color);
+      background: rgba(255, 140, 0, 0.1);
+    }
+
+    .type-option input[type="radio"] {
+      display: none;
+    }
+
+    .type-option input[type="radio"]:checked + .type-label {
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+
+    .type-label {
+      display: block;
+      padding: 10px;
+      color: var(--light-text);
+    }
+
+    .color-preview {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 5px;
+      border: 2px solid #444;
+      vertical-align: middle;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      width: 100%;
+      transition: var(--transition);
+    }
+
+    .btn-primary:hover {
+      background-color: #ff7600;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
+    }
+
+    .btn-primary:disabled {
+      background-color: #666;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .blockouts-section {
+      background: var(--secondary-color);
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      grid-column: 1 / -1;
+      border: 1px solid #3a3a3a;
+    }
+
+    .blockouts-section h2 {
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      font-size: 20px;
+      border-bottom: 2px solid var(--primary-color);
+      padding-bottom: 10px;
+    }
+
+    .blockouts-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .blockouts-table thead {
+      background-color: #3a3a3a;
+      border-bottom: 2px solid var(--primary-color);
+    }
+
+    .blockouts-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .blockouts-table td {
+      padding: 12px;
+      border-bottom: 1px solid #3a3a3a;
+      color: var(--light-text);
+    }
+
+    .blockouts-table tbody tr:hover {
+      background-color: rgba(255, 140, 0, 0.05);
+    }
+
+    .blockout-type {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      color: white;
+      font-weight: 600;
+      font-size: 12px;
+      text-align: center;
+      min-width: 100px;
+    }
+
+    .blockout-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+
+    .btn-edit {
+      background-color: #17a2b8;
+      color: white;
+    }
+
+    .btn-edit:hover {
+      background-color: #138496;
+      transform: translateY(-2px);
+    }
+
+    .btn-delete {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .btn-delete:hover {
+      background-color: #c82333;
+      transform: translateY(-2px);
+    }
+
+    .alert {
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert.success {
+      background-color: rgba(76, 175, 80, 0.1);
+      color: #4CAF50;
+      border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+
+    .alert.error {
+      background-color: rgba(244, 67, 54, 0.1);
+      color: #f44336;
+      border: 1px solid rgba(244, 67, 54, 0.3);
+    }
+
+    .alert.info {
+      background-color: rgba(255, 140, 0, 0.1);
+      color: var(--primary-color);
+      border: 1px solid rgba(255, 140, 0, 0.3);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--primary-color);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: var(--secondary-color);
+      padding: 30px;
+      border-radius: 8px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+      border: 1px solid #3a3a3a;
+    }
+
+    .modal-header {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: var(--primary-color);
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .btn-cancel {
+      background-color: #4a4a4a;
+      color: var(--light-text);
+      padding: 10px 20px;
+      border: 1px solid #3a3a3a;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+
+    .btn-cancel:hover {
+      background-color: #5a5a5a;
+      border-color: var(--primary-color);
+    }
+
+    @media (max-width: 768px) {
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .type-selector {
+        grid-template-columns: 1fr;
+      }
+
+      .blockouts-table {
+        font-size: 12px;
+      }
+
+      .blockouts-table th,
+      .blockouts-table td {
+        padding: 8px;
+      }
+    }
+
+    .color-input-wrapper {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="color"] {
+      width: 50px;
+      height: 40px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .text-muted {
+      color: #999;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📅 Gerenciar Bloqueios de Calendário</h1>
+      <a href="/admin.html" class="btn-back">← Voltar ao Admin</a>
+    </header>
+
+    <div class="alert" id="alertBox"></div>
+
+    <div class="content">
+      <!-- FORMULÁRIO PARA CRIAR NOVO BLOQUEIO -->
+      <div class="form-section">
+        <h2>Novo Bloqueio</h2>
+        <form id="blockoutForm">
+          <!-- Tipo de Data -->
+          <div class="form-group">
+            <label>Tipo de Data</label>
+            <div class="type-selector">
+              <label class="type-option">
+                <input type="radio" name="dateType" value="single" checked>
+                <span class="type-label">📅 Um dia</span>
+              </label>
+              <label class="type-option">
+                <input type="radio" name="dateType" value="range">
+                <span class="type-label">📆 Período</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Data/Período -->
+          <div class="form-group" id="dateSingleGroup">
+            <label for="blockoutDate">Data</label>
+            <input type="date" id="blockoutDate" name="blockoutDate" required>
+          </div>
+
+          <div class="form-group" id="dateRangeGroup" style="display: none;">
+            <div class="form-row">
+              <div>
+                <label for="blockoutStartDate">Data Inicial</label>
+                <input type="date" id="blockoutStartDate" name="blockoutStartDate">
+              </div>
+              <div>
+                <label for="blockoutEndDate">Data Final</label>
+                <input type="date" id="blockoutEndDate" name="blockoutEndDate">
+              </div>
+            </div>
+          </div>
+
+          <!-- Turno -->
+          <div class="form-group">
+            <label for="shift">Turno (opcional)</label>
+            <select id="shift" name="shift">
+              <option value="">-- Dia inteiro --</option>
+              <option value="matutino">Matutino (7:30 - 11:30)</option>
+              <option value="vespertino">Vespertino (13:30 - 17:30)</option>
+              <option value="noturno">Noturno (18:30 - 22:00)</option>
+              <option value="integral">Integral (08:00 - 17:00)</option>
+            </select>
+          </div>
+
+          <!-- Tipo de Bloqueio -->
+          <div class="form-group">
+            <label>Motivo do Bloqueio</label>
+            <div class="type-selector" id="blockoutTypeSelector" style="grid-template-columns: 1fr;">
+              <!-- Será preenchido por JavaScript -->
+            </div>
+          </div>
+
+          <!-- Observação -->
+          <div class="form-group">
+            <label for="observation">Observação Detalhada</label>
+            <textarea id="observation" name="observation" placeholder="Descreva o motivo do bloqueio..." required></textarea>
+          </div>
+
+          <!-- Cor (opcional) -->
+          <div class="form-group">
+            <label>Cor (opcional)</label>
+            <div class="color-input-wrapper">
+              <input type="color" id="blockoutColor" name="blockoutColor">
+              <span class="text-muted">Deixe em branco para usar a cor padrão do tipo</span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary">✅ Criar Bloqueio</button>
+        </form>
+      </div>
+
+      <!-- INFO SIDEBAR -->
+      <div class="form-section" style="background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); color: var(--light-text); display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--primary-color);">
+        <div>
+          <h2 style="color: var(--primary-color); border-bottom: 2px solid rgba(255, 140, 0, 0.3);">ℹ️ Legenda de Cores</h2>
+          <div style="margin-top: 20px;">
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <div class="color-preview" style="background-color: #DC3545;"></div>
+              <span>Feriado Nacional</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <div class="color-preview" style="background-color: #FD7E14;"></div>
+              <span>Feriado Estadual</span>
+            </div>
+            <div style="display: flex; align-items: center;">
+              <div class="color-preview" style="background-color: #6F42C1;"></div>
+              <span>Feriado Municipal</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 12px;">
+          <p><strong>💡 Dica:</strong> Os bloqueios aparecem no calendário para todos os instrutores com informações ao passar o mouse.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABELA DE BLOQUEIOS EXISTENTES -->
+    <div class="blockouts-section">
+      <h2>Bloqueios Cadastrados</h2>
+      
+      <!-- FILTROS -->
+      <div class="filters-section" style="margin-bottom: 20px; padding: 15px; background: var(--secondary-color); border-radius: var(--border-radius); border: 1px solid #3a3a3a;">
+        <h3 style="color: var(--primary-color); margin-bottom: 15px; font-size: 16px;">🔍 Filtros</h3>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px;">
+          <!-- Filtro de Tipo -->
+          <div>
+            <label style="display: block; margin-bottom: 10px; font-weight: 600; color: var(--light-text);">Tipo de Bloqueio</label>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label style="display: flex; align-items: center; gap: 8px; color: var(--light-text); cursor: pointer;">
+                <input type="radio" name="filterType" value="" checked onchange="applyFilters()">
+                <span>Todos os tipos</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; color: var(--light-text); cursor: pointer;">
+                <input type="radio" name="filterType" value="national_holiday" onchange="applyFilters()">
+                <span>🇧🇷 Feriado Nacional</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; color: var(--light-text); cursor: pointer;">
+                <input type="radio" name="filterType" value="state_holiday" onchange="applyFilters()">
+                <span>🏴 Feriado Estadual</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; color: var(--light-text); cursor: pointer;">
+                <input type="radio" name="filterType" value="municipal_holiday" onchange="applyFilters()">
+                <span>🏙️ Feriado Municipal</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Filtro de Data -->
+          <div>
+            <label style="display: block; margin-bottom: 10px; font-weight: 600; color: var(--light-text);">Período</label>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <label style="display: flex; flex-direction: column; flex: 1;">
+                  <span style="font-size: 12px; color: #999; margin-bottom: 4px;">Data Inicial</span>
+                  <input type="date" id="filterStartDate" onchange="applyFilters()" style="background: #3a3a3a; color: var(--light-text); border: 1px solid #444; padding: 8px; border-radius: 4px;">
+                </label>
+                <label style="display: flex; flex-direction: column; flex: 1;">
+                  <span style="font-size: 12px; color: #999; margin-bottom: 4px;">Data Final</span>
+                  <input type="date" id="filterEndDate" onchange="applyFilters()" style="background: #3a3a3a; color: var(--light-text); border: 1px solid #444; padding: 8px; border-radius: 4px;">
+                </label>
+              </div>
+              <button onclick="clearFilters()" style="background: #4a4a4a; color: var(--light-text); border: 1px solid #3a3a3a; padding: 8px; border-radius: 4px; cursor: pointer; transition: var(--transition);" onmouseover="this.style.background='#5a5a5a'" onmouseout="this.style.background='#4a4a4a'">
+                🔄 Limpar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="blockoutsContainer">
+        <div class="loading">⏳ Carregando bloqueios...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO -->
+  <div class="modal" id="deleteModal">
+    <div class="modal-content">
+      <div class="modal-header">Confirmar Exclusão</div>
+      <p>Tem certeza que deseja excluir este bloqueio?</p>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeDeleteModal()">Cancelar</button>
+        <button class="btn-primary" onclick="confirmDelete()">Deletar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tipo de bloqueios
+    const BLOCKOUT_TYPES = {
+      national_holiday: {
+        label: 'Feriado Nacional',
+        color: '#DC3545',
+        icon: '🇧🇷'
+      },
+      state_holiday: {
+        label: 'Feriado Estadual',
+        color: '#FD7E14',
+        icon: '🏴'
+      },
+      municipal_holiday: {
+        label: 'Feriado Municipal',
+        color: '#6F42C1',
+        icon: '🏙️'
+      }
+    };
+
+    let blockouts = [];
+    let blockoutToDelete = null;
+    let filteredBlockouts = [];
+
+    // Verificar autenticação
+    function checkAuth() {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        window.location.href = '/login.html';
+        return false;
+      }
+      return true;
+    }
+
+    // Mostrar alerta
+    function showAlert(message, type = 'info') {
+      const alertBox = document.getElementById('alertBox');
+      alertBox.innerHTML = message;
+      alertBox.className = `alert ${type} show`;
+      
+      setTimeout(() => {
+        alertBox.classList.remove('show');
+      }, 4000);
+    }
+
+    // Inicializar formulário
+    function initializeForm() {
+      // Preencherer seletor de tipo
+      const typeSelector = document.getElementById('blockoutTypeSelector');
+      typeSelector.innerHTML = Object.entries(BLOCKOUT_TYPES).map(([key, value]) => `
+        <label class="type-option">
+          <input type="radio" name="blockoutType" value="${key}" ${key === 'national_holiday' ? 'checked' : ''}>
+          <div class="type-label">
+            <span class="color-preview" style="background-color: ${value.color};"></span>
+            <span>${value.icon} ${value.label}</span>
+          </div>
+        </label>
+      `).join('');
+
+      // Alternar entre data única e período
+      document.querySelectorAll('input[name="dateType"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          if (e.target.value === 'single') {
+            document.getElementById('dateSingleGroup').style.display = 'block';
+            document.getElementById('dateRangeGroup').style.display = 'none';
+            document.getElementById('blockoutDate').required = true;
+            document.getElementById('blockoutStartDate').required = false;
+            document.getElementById('blockoutEndDate').required = false;
+          } else {
+            document.getElementById('dateSingleGroup').style.display = 'none';
+            document.getElementById('dateRangeGroup').style.display = 'block';
+            document.getElementById('blockoutDate').required = false;
+            document.getElementById('blockoutStartDate').required = true;
+            document.getElementById('blockoutEndDate').required = true;
+          }
+        });
+      });
+
+      // Listener do formulário
+      document.getElementById('blockoutForm').addEventListener('submit', handleFormSubmit);
+
+      // Atualizar cor quando tipo mudar
+      document.querySelectorAll('input[name="blockoutType"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          const type = e.target.value;
+          document.getElementById('blockoutColor').value = BLOCKOUT_TYPES[type].color;
+        });
+      });
+    }
+
+    // Submeter formulário
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const dateType = document.querySelector('input[name="dateType"]:checked').value;
+      const blockoutType = document.querySelector('input[name="blockoutType"]:checked').value;
+      const shiftValue = document.getElementById('shift').value;
+      const shift = shiftValue && shiftValue.trim() !== '' ? shiftValue : null;
+      const observation = document.getElementById('observation').value;
+      const colorValue = document.getElementById('blockoutColor').value;
+
+      let blockoutDate, blockoutStartDate, blockoutEndDate;
+
+      if (dateType === 'single') {
+        blockoutDate = document.getElementById('blockoutDate').value;
+        blockoutStartDate = blockoutDate;
+        blockoutEndDate = blockoutDate;
+      } else {
+        blockoutStartDate = document.getElementById('blockoutStartDate').value;
+        blockoutEndDate = document.getElementById('blockoutEndDate').value;
+      }
+
+      if (!blockoutStartDate || !blockoutEndDate) {
+        showAlert('❌ Preencha as datas corretamente', 'error');
+        return;
+      }
+
+      if (new Date(blockoutStartDate) > new Date(blockoutEndDate)) {
+        showAlert('❌ Data inicial não pode ser posterior à data final', 'error');
+        return;
+      }
+
+      const payload = {
+        blockout_date: blockoutStartDate,
+        blockout_start_date: blockoutStartDate,
+        blockout_end_date: blockoutEndDate,
+        shift: shift,
+        blockout_type: blockoutType,
+        observation: observation,
+        color: colorValue && colorValue !== '' && (colorValue !== '#FFC107' && colorValue !== '#17A2B8' && colorValue !== '#6C63FF' && colorValue !== '#DC3545' && colorValue !== '#FD7E14' && colorValue !== '#6F42C1') ? colorValue : null
+      };
+
+      console.log('📤 [handleFormSubmit] Enviando payload:', payload);
+
+      try {
+        const response = await fetch('/api/blockouts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        console.log('📥 [handleFormSubmit] Resposta:', result);
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Erro ao criar bloqueio');
+        }
+
+        showAlert('✅ Bloqueio criado com sucesso!', 'success');
+        document.getElementById('blockoutForm').reset();
+        await loadBlockouts();
+      } catch (error) {
+        console.error('❌ [handleFormSubmit] Erro:', error);
+        showAlert(`❌ ${error.message}`, 'error');
+      }
+    }
+
+    // Carregar bloqueios - VERSÃO MELHORADA COM DEBUG
+    async function loadBlockouts() {
+      const container = document.getElementById('blockoutsContainer');
+      container.innerHTML = '<div class="loading">⏳ Carregando bloqueios...</div>';
+
+      try {
+        console.log('🔄 [loadBlockouts] Iniciando carregamento...');
+        const token = localStorage.getItem('auth_token');
+        console.log('🔐 [loadBlockouts] Token presente:', !!token);
+
+        // Tentar com token primeiro
+        let response = await fetch('/api/blockouts', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        console.log('📊 [loadBlockouts] Status da resposta (com token):', response.status);
+
+        // Se falhar com token, tentar sem token
+        if (!response.ok && response.status === 401) {
+          console.log('⚠️ [loadBlockouts] Falha com token, tentando sem token...');
+          response = await fetch('/api/blockouts', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          console.log('📊 [loadBlockouts] Status da resposta (sem token):', response.status);
+        }
+
+        const result = await response.json();
+        console.log('📥 [loadBlockouts] Resposta:', result);
+
+        if (!response.ok) {
+          const errorMsg = result.message || result.error || `Erro HTTP ${response.status}`;
+          throw new Error(errorMsg);
+        }
+
+        blockouts = result.data || result || [];
+        console.log('✅ [loadBlockouts] Bloqueios carregados:', blockouts.length);
+        
+        // Aplicar filtros e renderizar
+        applyFilters();
+      } catch (error) {
+        console.error('❌ [loadBlockouts] Erro completo:', error);
+        container.innerHTML = `
+          <div class="alert error" style="padding: 20px; border-radius: 8px;">
+            <strong>❌ Erro ao carregar bloqueios</strong>
+            <p style="margin-top: 10px; font-size: 14px;">${error.message}</p>
+            <p style="margin-top: 10px; font-size: 12px; color: #999;">
+              <strong>Debug:</strong> Abra o console (F12) para mais detalhes.
+            </p>
+            <button onclick="location.reload()" style="margin-top: 10px; background: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+              🔄 Tentar Novamente
+            </button>
+          </div>
+        `;
+        showAlert(`❌ ${error.message}`, 'error');
+      }
+    }
+
+    // Aplicar filtros
+    function applyFilters() {
+      const typeFilter = document.querySelector('input[name="filterType"]:checked')?.value || '';
+      const startDateFilter = document.getElementById('filterStartDate')?.value || '';
+      const endDateFilter = document.getElementById('filterEndDate')?.value || '';
+
+      console.log('🔍 [applyFilters] Aplicando filtros:', { typeFilter, startDateFilter, endDateFilter });
+
+      filteredBlockouts = blockouts.filter(blockout => {
+        // Filtro de tipo
+        if (typeFilter && blockout.blockout_type !== typeFilter) {
+          return false;
+        }
+
+        // Filtro de data
+        if (startDateFilter) {
+          const blockoutStart = new Date(blockout.blockout_start_date);
+          const filterStart = new Date(startDateFilter);
+          if (blockoutStart < filterStart) {
+            return false;
+          }
+        }
+
+        if (endDateFilter) {
+          const blockoutEnd = new Date(blockout.blockout_end_date);
+          const filterEnd = new Date(endDateFilter);
+          if (blockoutEnd > filterEnd) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      console.log('✅ [applyFilters] Bloqueios filtrados:', filteredBlockouts.length);
+      renderBlockoutsTable();
+    }
+
+    // Limpar filtros
+    function clearFilters() {
+      document.querySelector('input[name="filterType"][value=""]').checked = true;
+      document.getElementById('filterStartDate').value = '';
+      document.getElementById('filterEndDate').value = '';
+      applyFilters();
+    }
+
+    // Renderizar tabela - VERSÃO MELHORADA
+    function renderBlockoutsTable() {
+      const container = document.getElementById('blockoutsContainer');
+
+      if (!filteredBlockouts || filteredBlockouts.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p>${blockouts.length === 0 ? 'Nenhum bloqueio cadastrado ainda.' : 'Nenhum bloqueio corresponde aos filtros selecionados.'}</p>
+          </div>
+        `;
+        return;
+      }
+
+      const html = `
+        <div style="margin-bottom: 10px; font-size: 12px; color: #999;">
+          Mostrando <strong>${filteredBlockouts.length}</strong> de <strong>${blockouts.length}</strong> bloqueio(s)
+        </div>
+        <table class="blockouts-table">
+          <thead>
+            <tr>
+              <th>Período</th>
+              <th>Turno</th>
+              <th>Tipo</th>
+              <th>Observação</th>
+              <th>Adicionado por</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredBlockouts.map(blockout => `
+              <tr>
+                <td>
+                  ${formatDate(blockout.blockout_start_date)} 
+                  ${blockout.blockout_start_date !== blockout.blockout_end_date ? `a ${formatDate(blockout.blockout_end_date)}` : ''}
+                </td>
+                <td>${blockout.shift ? getShiftLabel(blockout.shift) : 'Dia inteiro'}</td>
+                <td>
+                  <span class="blockout-type" style="background-color: ${BLOCKOUT_TYPES[blockout.blockout_type]?.color || '#999'};">
+                    ${BLOCKOUT_TYPES[blockout.blockout_type]?.icon || '•'} ${BLOCKOUT_TYPES[blockout.blockout_type]?.label || blockout.blockout_type}
+                  </span>
+                </td>
+                <td>${blockout.observation || '-'}</td>
+                <td>${blockout.created_by?.name || 'Admin'}</td>
+                <td>
+                  <div class="blockout-actions">
+                    <button class="btn-small btn-delete" onclick="openDeleteModal('${blockout.id}')">🗑️ Deletar</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    // Formatar data
+    function formatDate(dateString) {
+      const date = new Date(dateString + 'T00:00:00');
+      return date.toLocaleDateString('pt-BR');
+    }
+
+    // Label do turno
+    function getShiftLabel(shift) {
+      const shifts = {
+        matutino: 'Matutino (7:30 - 11:30)',
+        vespertino: 'Vespertino (13:30 - 17:30)',
+        noturno: 'Noturno (18:30 - 22:00)',
+        integral: 'Integral (08:00 - 17:00)'
+      };
+      return shifts[shift] || shift;
+    }
+
+    // Abrir modal de confirmação
+    function openDeleteModal(blockoutId) {
+      blockoutToDelete = blockoutId;
+      document.getElementById('deleteModal').classList.add('show');
+    }
+
+    // Fechar modal
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.remove('show');
+      blockoutToDelete = null;
+    }
+
+    // Confirmar exclusão
+    async function confirmDelete() {
+      if (!blockoutToDelete) return;
+
+      try {
+        const response = await fetch(`/api/blockouts/${blockoutToDelete}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Erro ao deletar bloqueio');
+        }
+
+        showAlert('✅ Bloqueio deletado com sucesso!', 'success');
+        closeDeleteModal();
+        await loadBlockouts();
+      } catch (error) {
+        showAlert(`❌ ${error.message}`, 'error');
+      }
+    }
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!checkAuth()) return;
+      initializeForm();
+      loadBlockouts();
+
+      // Set data mínima para hoje
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('blockoutDate').min = today;
+      document.getElementById('blockoutStartDate').min = today;
+      document.getElementById('blockoutEndDate').min = today;
+    });
+  </script>
+</body>
+</html>

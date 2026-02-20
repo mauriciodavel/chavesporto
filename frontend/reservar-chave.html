@@ -1,0 +1,2367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservar Chave - Chavesporto</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        :root {
+            --primary-color: #FF8C00;
+            --secondary-color: #2a2a2a;
+            --accent-color: #1a1a1a;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --danger-color: #f44336;
+            --light-text: #f0f0f0;
+            --dark-text: #333;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        .reservation-container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: var(--secondary-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 30px;
+        }
+
+        h1 {
+            color: var(--light-text);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        #blockoutForm {
+            display: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        #blockoutForm h2 {
+            color: white;
+            margin-top: 0;
+        }
+
+        #blockoutForm label {
+            color: white;
+            font-weight: 600;
+        }
+
+        #blockoutForm small {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        #blockoutForm .shifts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        #blockoutForm .shift-option {
+            position: relative;
+        }
+
+        #blockoutForm .shift-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        #blockoutForm .shift-option input[type="radio"]:checked + .shift-label {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+        }
+
+        #blockoutForm .shift-label {
+            display: block;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            color: white;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        #blockoutForm .shift-label:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
+        #blockoutForm input[type="text"],
+        #blockoutForm input[type="date"],
+        #blockoutForm select,
+        #blockoutForm textarea {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #ddd;
+            color: #333;
+        }
+
+        #blockoutForm input[type="text"]::placeholder,
+        #blockoutForm textarea::placeholder {
+            color: #999;
+        }
+
+        .btn-toggle-blockout {
+
+            display: block;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #e53935 0%, #d32f2f 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-toggle-blockout:hover {
+            background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+        }
+
+        .btn-toggle-blockout.active {
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+        }
+
+        .btn-toggle-blockout.active:hover {
+            background: linear-gradient(135deg, #388E3C 0%, #2E7D32 100%);
+        }
+
+        /* Formulário de Bloqueio (inicialmente escondido) */
+        #blockoutForm {
+            display: none;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            margin-bottom: 30px;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #blockoutForm h2 {
+            color: #ff6f00;
+            font-size: 24px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #blockoutForm .form-group label {
+            font-weight: 600;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        #blockoutForm .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            justify-content: flex-end;
+        }
+
+        #blockoutForm .btn-primary {
+            background: linear-gradient(135deg, #ff6f00 0%, #ff8f00 100%);
+            border: none;
+            padding: 12px 25px;
+            font-size: 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        #blockoutForm .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 111, 0, 0.3);
+        }
+
+        #blockoutForm .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #blockoutForm .btn-secondary {
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            padding: 12px 25px;
+            font-size: 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        #blockoutForm .btn-secondary:hover {
+            background: #dee2e6;
+            transform: translateY(-2px);
+        }
+
+        #blockoutForm .loading {
+            margin-top: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-weight: 600;
+            color: var(--light-text);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: var(--transition);
+            background: #3a3a3a;
+            color: var(--light-text);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .calendar-container {
+            margin: 10px 0;
+            padding: 8px;
+            background: var(--accent-color);
+            border-radius: var(--border-radius);
+            border: 1px solid #444;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+            margin-top: 8px;
+            overflow: visible !important;
+            position: relative;
+        }
+
+        .day-header {
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary-color);
+            padding: 3px 0;
+            font-size: 18px;
+        }
+
+        .calendar-day {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #444;
+            border-radius: 2px;
+            cursor: pointer;
+            background: #3a3a3a;
+            transition: var(--transition);
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--light-text);
+            height: 20px;
+            min-height: 20px;
+            width: 100%;
+            padding: 0;
+        }
+
+        .calendar-day:hover:not(.other-month):not(.disabled) {
+            background: #4a4a4a;
+            border-color: var(--primary-color);
+        }
+
+        .calendar-day.other-month {
+            color: #666;
+            background: var(--accent-color);
+            cursor: default;
+        }
+
+        .calendar-day.selected {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .calendar-day.range {
+            background: rgba(255, 140, 0, 0.2);
+            color: var(--light-text);
+        }
+
+        .calendar-day.disabled {
+            background: #2a2a2a;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .month-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 5px;
+        }
+
+        .month-nav button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: var(--transition);
+            font-size: 13px;
+        }
+
+        .month-nav button:hover {
+            background: #ff7600;
+        }
+
+        .month-nav h3 {
+            margin: 0;
+            color: var(--light-text);
+            font-size: 14px;
+        }
+
+        .date-display {
+            background: #3a3a3a;
+            padding: 6px 8px;
+            border-radius: 3px;
+            margin-top: 5px;
+            font-size: 11px;
+            color: var(--light-text);
+            border: 1px solid #444;
+        }
+
+        .date-display.active {
+            background: rgba(76, 175, 80, 0.1);
+            border-left: 3px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        .shifts-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .shift-option {
+            position: relative;
+        }
+
+        .shift-option input[type="radio"] {
+            display: none;
+        }
+
+        .shift-label {
+            display: block;
+            padding: 10px;
+            border: 2px solid #555;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            color: var(--light-text);
+            background: #3a3a3a;
+            font-size: 13px;
+        }
+
+        .shift-label:hover {
+            border-color: var(--primary-color);
+            background: #4a4a4a;
+        }
+
+        /* Destaque quando turno é selecionado */
+        input[type="radio"]:checked + .shift-label {
+            background: linear-gradient(135deg, #FF8C00 0%, #ff7000 100%);
+            border-color: #FF9C20;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255, 140, 0, 0.3);
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button.btn-primary, button.btn-secondary {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        button.btn-primary {
+            background: var(--success-color);
+            color: white;
+        }
+
+        button.btn-primary:hover {
+            background: #45a049;
+        }
+
+        button.btn-primary:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        button.btn-secondary {
+            background: #666;
+            color: white;
+        }
+
+        button.btn-secondary:hover {
+            background: #555;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert.success {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+            border-left: 4px solid var(--success-color);
+        }
+
+        .alert.error {
+            background: rgba(244, 67, 54, 0.1);
+            color: var(--danger-color);
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .alert.info {
+            background: rgba(255, 140, 0, 0.1);
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #444;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .reservations-list {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #3a3a3a;
+        }
+
+        .reservation-card {
+            background: #3a3a3a;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .reservation-card p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: var(--light-text);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .status-badge.pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: var(--warning-color);
+        }
+
+        .status-badge.approved {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--success-color);
+        }
+
+        .status-badge.rejected {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--danger-color);
+        }
+        /* ========== SIDEBAR ========== */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: #1a1a1a;
+            border-right: 1px solid #444;
+            z-index: 100;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .sidebar-logo {
+            padding: 20px;
+            border-bottom: 1px solid #444;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 12px 20px;
+            color: var(--light-text);
+            text-decoration: none;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu a:hover {
+            background: rgba(255, 140, 0, 0.1);
+            border-left-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .sidebar-menu a.active {
+            background: rgba(255, 140, 0, 0.2);
+            border-left-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid #444;
+            text-align: center;
+            font-size: 12px;
+            color: #95a5a6;
+        }
+
+        .page-wrapper {
+            margin-left: 250px;
+            min-height: 100vh;
+        }
+
+        /* ========== ADMIN SIDEBAR STYLES ========== */
+        .admin-sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, var(--secondary-color), #1a1a1a);
+            padding: 2rem 1rem;
+            border-right: 3px solid var(--primary-color);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .admin-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .admin-logo-icon {
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .admin-logo h2 {
+            font-size: 1.25rem;
+            color: var(--primary-color);
+        }
+
+        .sidebar-nav-item {
+            padding: 1rem;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: left;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 15px;
+            text-decoration: none;
+        }
+
+        .sidebar-nav-item:hover {
+            background-color: rgba(255, 140, 0, 0.1);
+            color: var(--primary-color);
+        }
+
+        .sidebar-nav-item.active {
+            background-color: rgba(255, 140, 0, 0.2);
+            color: var(--primary-color);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .sidebar-section {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #3a3a3a;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #666;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 3px solid var(--primary-color);
+                padding: 1rem;
+            }
+
+            .admin-sidebar .sidebar-nav {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .admin-sidebar .sidebar-nav-item {
+                flex: 1;
+                min-width: 150px;
+                padding: 0.75rem;
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-bottom: 1px solid #444;
+                border-right: none;
+            }
+
+            .sidebar-nav {
+                flex-direction: row;
+            }
+
+            .sidebar-menu {
+                display: flex;
+                flex: 1;
+                padding: 0;
+                overflow-y: visible;
+                overflow-x: auto;
+            }
+
+            .sidebar-menu a {
+                flex-shrink: 0;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+                padding: 12px 15px;
+            }
+
+            .sidebar-menu a:hover, .sidebar-menu a.active {
+                border-bottom-color: var(--primary-color);
+                border-left: none;
+            }
+
+            .page-wrapper {
+                margin-left: 0;
+                margin-top: 70px;
+            }
+        }
+
+        /* ========== HIGHLIGHT DIAS BLOQUEADOS ========== */
+        .calendar-day.blocked {
+            background: linear-gradient(135deg, #f44336 0%, #e53935 100%) !important;
+            color: white !important;
+            font-weight: bold;
+            position: relative;
+            cursor: not-allowed !important;
+            border: 2px solid rgba(244, 67, 54, 0.8);
+        }
+
+        .calendar-day.blocked::before {
+            content: '🔒';
+            position: absolute;
+            font-size: 10px;
+            bottom: 2px;
+            right: 2px;
+        }
+
+        /* ========== DIAS COM BLOQUEIOS DE CALENDÁRIO ========== */
+        .calendar-day.has-blockout {
+            position: relative;
+            cursor: not-allowed !important;
+            color: white !important;
+            font-weight: bold;
+            overflow: visible !important;
+            z-index: 1;
+            pointer-events: auto !important;
+        }
+
+        .calendar-day.has-blockout::before {
+            content: '🔒';
+            position: absolute;
+            font-size: 10px;
+            bottom: 2px;
+            right: 2px;
+            z-index: 2;
+        }
+
+        .blockout-indicator {
+            display: none;
+        }
+
+        .calendar-day.has-blockout .blockout-indicator::before {
+            display: none;
+        }
+
+        /* Tooltip para bloqueios */
+        .blockout-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            z-index: 10000;
+            background-color: rgba(0, 0, 0, 0.98);
+            color: #FFD700;
+            text-align: center;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 2px solid #FFD700;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: normal;
+            width: 240px;
+            word-wrap: break-word;
+            pointer-events: none;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.8), 0 0 15px rgba(255, 215, 0, 0.4);
+            line-height: 1.5;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            transition: visibility 0.2s ease, opacity 0.2s ease;
+        }
+
+        .blockout-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.98) transparent transparent transparent;
+        }
+
+        /* ========== MODAL POPUP ========== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--secondary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--light-text);
+            margin: 0;
+        }
+
+        .modal-body {
+            font-size: 15px;
+            color: var(--light-text);
+            margin-bottom: 20px;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .modal-body p {
+            margin: 8px 0;
+        }
+
+        .modal-body strong {
+            color: var(--primary-color);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .modal-btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .modal-btn-primary:hover {
+            background: #ff7000;
+            transform: scale(1.05);
+        }
+
+        .modal-btn-secondary {
+            background: #555;
+            color: white;
+        }
+
+        .modal-btn-secondary:hover {
+            background: #666;
+        }
+
+        .modal-btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .modal-btn-success:hover {
+            background: #45a049;
+        }
+
+        .modal-btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .modal-btn-danger:hover {
+            background: #da190b;
+        }
+
+        .modal-icon-success {
+            color: var(--success-color);
+        }
+
+        .modal-icon-error {
+            color: var(--danger-color);
+        }
+
+        .modal-icon-warning {
+            color: var(--warning-color);
+        }
+
+        .modal-icon-info {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- MODAL POPUP -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modalIcon" class="modal-icon"></span>
+                <h2 class="modal-title" id="modalTitle">Mensagem</h2>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn modal-btn-primary" id="modalOkBtn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR USER -->
+    <aside class="sidebar" id="userSidebar">
+        <nav class="sidebar-nav">
+            <div class="sidebar-logo">🔑 Chavesporto</div>
+            <div class="sidebar-menu">
+                <a href="dashboard.html" class="sidebar-link">📊 Dashboard</a>
+                <a href="reservar-chave.html" class="sidebar-link active">📅 Minhas Reservas</a>
+                <a href="#" class="sidebar-link" id="sidebarLogout">🚪 Sair</a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- SIDEBAR ADMIN -->
+    <div class="admin-sidebar" id="adminSidebar" style="display: none;">
+      <div class="admin-logo">
+        <div class="admin-logo-icon">⚙️</div>
+        <h2>Chaves Porto</h2>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="admin.html" class="sidebar-nav-item" style="text-decoration: none;">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="admin.html?section=keys" class="sidebar-nav-item" style="text-decoration: none;">
+          <span>🔑</span> Chaves
+        </a>
+        <a href="admin.html?section=instructors" class="sidebar-nav-item" style="text-decoration: none;">
+          <span>👥</span> Instrutores
+        </a>
+        <a href="admin.html?section=history" class="sidebar-nav-item" style="text-decoration: none;">
+          <span>📋</span> Histórico
+        </a>
+        <a href="/admin-reservas" class="sidebar-nav-item active" style="text-decoration: none;">
+          <span>📅</span> Reservas
+        </a>
+        <a href="/admin-blockouts" class="sidebar-nav-item" style="text-decoration: none;">
+          <span>🔒</span> Bloqueios
+        </a>
+      </nav>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Conta</div>
+        <nav class="sidebar-nav">
+          <button class="sidebar-nav-item" id="adminSidebarLogout">
+            <span>🚪</span> Sair
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- PAGE WRAPPER -->
+    <div class="page-wrapper">
+
+    <div class="reservation-container">
+        <h1>📅 Reservar Chave</h1>
+
+        <div class="alert" id="alertBox"></div>
+        
+        <!-- BOTÃO PARA MODO BLOQUEIO (ADMIN) -->
+        <div id="blockoutModeToggle" style="margin-bottom: 20px;">
+            <button type="button" id="toggleBlockoutBtn" class="btn-toggle-blockout" style="display: none;">🔒 Criar Bloqueio de Ambiente</button>
+        </div>
+        
+        <form id="reservationForm">
+            <!-- Seleção de Instrutor (apenas admin) -->
+            <div class="form-grid" id="adminInstructorField" style="display: none;">
+                <div class="form-group">
+                    <label for="instructorSelect">Instrutor *</label>
+                    <select id="instructorSelect">
+                        <option value="">Selecione um instrutor...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Seleção de Chave -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="keySelect">Chave/Sala *</label>
+                    <select id="keySelect" required>
+                        <option value="">Selecione uma chave...</option>
+                    </select>
+                </div>
+
+                <!-- Turma -->
+                <div class="form-group">
+                    <label for="turma">Turma *</label>
+                    <input type="text" id="turma" placeholder="Ex: SENAI-001" required>
+                </div>
+            </div>
+
+            <!-- Turno -->
+            <div class="form-group full">
+                <label>Turno *</label>
+                <div class="shifts-container">
+                    <div class="shift-option">
+                        <input type="radio" id="matutino" name="shift" value="matutino">
+                        <label class="shift-label" for="matutino">
+                            ☀️ Matutino<br><small>7:30 - 11:30</small>
+                        </label>
+                    </div>
+                    <div class="shift-option">
+                        <input type="radio" id="vespertino" name="shift" value="vespertino">
+                        <label class="shift-label" for="vespertino">
+                            🌤️ Vespertino<br><small>13:30 - 17:30</small>
+                        </label>
+                    </div>
+                    <div class="shift-option">
+                        <input type="radio" id="noturno" name="shift" value="noturno">
+                        <label class="shift-label" for="noturno">
+                            🌙 Noturno<br><small>18:30 - 22:00</small>
+                        </label>
+                    </div>
+                    <div class="shift-option">
+                        <input type="radio" id="integral" name="shift" value="integral">
+                        <label class="shift-label" for="integral">
+                            🔄 Integral<br><small>08:00 - 17:00</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendário -->
+            <div class="calendar-container">
+                <h3 style="margin: 0 0 4px 0; font-size: 13px;">Período</h3>
+                <p style="color: #95a5a6; font-size: 12px; margin: 0 0 5px 0;">Selecione data inicial e final</p>
+                
+                <div class="month-nav">
+                    <button type="button" id="prevMonth">← Anterior</button>
+                    <h3 id="monthLabel" style="margin: 0; font-size: 12px;"></h3>
+                    <button type="button" id="nextMonth">Próximo →</button>
+                </div>
+
+                <div class="calendar-grid" id="calendar"></div>
+                
+                <div class="date-display" id="dateDisplay">
+                    Nenhuma data selecionada
+                </div>
+            </div>
+
+            <!-- Motivo -->
+            <div class="form-group full">
+                <label for="motivo">Motivo da Reserva *</label>
+                <textarea id="motivo" placeholder="Ex: Aula prática de programação, Treinamento..." required></textarea>
+            </div>
+
+            <!-- Ações -->
+            <div class="actions">
+                <button type="submit" class="btn-primary" id="submitBtn">
+                    ✅ Solicitar Reserva
+                </button>
+                <button type="reset" class="btn-secondary">
+                    🔄 Limpar
+                </button>
+            </div>
+
+            <div class="loading" id="loadingBox">
+                <div class="spinner"></div>
+                <p>Processando sua solicitação...</p>
+            </div>
+        </form>
+
+        <!-- FORMULÁRIO DE BLOQUEIO DE AMBIENTE (ADMIN) -->
+        <form id="blockoutForm">
+            <h2 style="margin-bottom: 20px;">🔒 Criar Bloqueio de Ambiente</h2>
+            
+            <!-- Card de Informações -->
+            <div class="info-card" style="
+                background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+                border-left: 4px solid #ff6f00;
+                padding: 15px;
+                border-radius: 6px;
+                margin-bottom: 20px;
+                font-size: 13px;
+                color: #333;
+            ">
+                <p style="margin: 0 0 8px 0;"><strong>💡 Informações:</strong></p>
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+                    <li>Bloqueios impedem novas reservas no período</li>
+                    <li>Selecione uma data de início e fim para o bloqueio</li>
+                    <li>Escolha o turno que será bloqueado</li>
+                    <li>Indique o tipo e motivo do bloqueio</li>
+                </ul>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="blockoutKeySelect">Ambiente *</label>
+                    <select id="blockoutKeySelect" required>
+                        <option value="">Selecione um ambiente...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="blockoutStartDate">Data de Início *</label>
+                    <input type="date" id="blockoutStartDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="blockoutEndDate">Data de Término *</label>
+                    <input type="date" id="blockoutEndDate" required>
+                </div>
+            </div>
+
+            <div class="form-group full">
+                <label>Turno *</label>
+                <div class="shifts-container">
+                    <div class="shift-option">
+                        <input type="radio" id="blockoutMatutino" name="blockoutShift" value="matutino">
+                        <label class="shift-label" for="blockoutMatutino">
+                            ☀️ Matutino<br><small>7:30 - 11:30</small>
+                        </label>
+                    </div>
+                    <div class="shift-option">
+                        <input type="radio" id="blockoutVespertino" name="blockoutShift" value="vespertino">
+                        <label class="shift-label" for="blockoutVespertino">
+                            🌤️ Vespertino<br><small>13:30 - 17:30</small>
+                        </label>
+                    </div>
+                    <div class="shift-option">
+                        <input type="radio" id="blockoutNoturno" name="blockoutShift" value="noturno">
+                        <label class="shift-label" for="blockoutNoturno">
+                            🌙 Noturno<br><small>19:00 - 22:00</small>
+                        </label>
+                    </div>
+                    <div class="shift-option">
+                        <input type="radio" id="blockoutIntegral" name="blockoutShift" value="integral">
+                        <label class="shift-label" for="blockoutIntegral">
+                            ⏰ Integral<br><small>Dia inteiro</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group full">
+                <label>Tipo de Bloqueio *</label>
+                <div class="shifts-container">
+                    <div class="shift-option">
+                        <input type="radio" id="blockoutTypeMaint" name="blockoutType" value="maintenance">
+                        <label class="shift-label" for="blockoutTypeMaint">
+                            🔧 Manutenção
+                        </label>
+                    </div>
+                    <div class="shift-option">
+                        <input type="radio" id="blockoutTypeInternal" name="blockoutType" value="internal_event">
+                        <label class="shift-label" for="blockoutTypeInternal">
+                            📢 Evento Interno
+                        </label>
+                    </div>
+                    <div class="shift-option">
+                        <input type="radio" id="blockoutTypeExternal" name="blockoutType" value="external_event">
+                        <label class="shift-label" for="blockoutTypeExternal">
+                            🏢 Evento Externo
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group full">
+                <label for="blockoutMotivo">Motivo/Descrição *</label>
+                <textarea id="blockoutMotivo" placeholder="Descreva o motivo do bloqueio..." required rows="3"></textarea>
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn-primary" id="submitBlockoutBtn">
+                    🔒 Criar Bloqueio
+                </button>
+                <button type="button" class="btn-secondary" id="cancelBlockoutBtn">
+                    ❌ Cancelar
+                </button>
+            </div>
+
+            <div class="loading" id="blockoutLoadingBox" style="display: none;">
+                <div class="spinner"></div>
+                <p>Criando bloqueio...</p>
+            </div>
+        </form>
+
+        <!-- Lista de Minhas Reservas -->
+        <div class="reservations-list">
+            <h2>📋 Minhas Reservas</h2>
+            <div id="myReservations">
+                <p style="text-align: center; color: #95a5a6;">Carregando suas reservas...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let token = localStorage.getItem('auth_token');
+        let currentUser = JSON.parse(localStorage.getItem('user_data') || '{}');
+        
+        // ========== DETECTAR MODO ADMIN ==========
+        const isAdminMode = new URLSearchParams(window.location.search).get('admin') === 'true';
+        let selectedInstructorId = null;
+        
+        console.log('🔑 Dados de Autenticação Carregados:');
+        console.log('   Token:', token ? '✅ Presente' : '❌ Ausente');
+        console.log('   Usuario:', currentUser);
+        console.log('   ID do Usuario:', currentUser?.id || '❌ UNDEFINED');
+        console.log('   Admin Mode:', isAdminMode ? '✅ ATIVADO' : '❌ Desativado');
+        
+        // Verificar autenticação
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        // ========== FUNÇÃO UTILITÁRIA PARA DATAS ==========
+        /**
+         * Converte string de data ISO (YYYY-MM-DD) para formato BR (DD/MM/YYYY)
+         * Evita problema de timezone ao interpretar datas ISO
+         */
+        function formatDateBR(dateString) {
+            try {
+                // Se for apenas a data (YYYY-MM-DD), faz parse local
+                if (dateString && dateString.length === 10) {
+                    const [year, month, day] = dateString.split('-');
+                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    return date.toLocaleDateString('pt-BR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    });
+                }
+                // Fallback para datetime strings
+                return new Date(dateString).toLocaleDateString('pt-BR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            } catch (e) {
+                console.error('❌ Erro ao formatar data:', dateString, e);
+                return 'Data inválida';
+            }
+        }
+        // State do calendário
+        let currentDate = new Date();
+        let startDate = null;
+        let endDate = null;
+        let keys = [];
+        let blockedDates = new Map(); // Mapa de datas bloqueadas -> {instructor, turma, shift}
+        let calendarBlockouts = new Map(); // Mapa de bloqueios do calendário por data -> {type, color, observation}
+
+        // ========== CALENDÁRIO ==========
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            // Atualizar label
+            const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                              'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            document.getElementById('monthLabel').textContent = `${monthNames[month]} ${year}`;
+
+            // Obter primeiro dia do mês
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+
+            // Headers dos dias
+            const dayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'day-header';
+                header.textContent = day;
+                calendar.appendChild(header);
+            });
+
+            // Dias do mês anterior
+            for (let i = firstDay.getDay() - 1; i >= 0; i--) {
+                const day = new Date(year, month, -i);
+                const el = createDayElement(day, true);
+                calendar.appendChild(el);
+            }
+
+            // Dias do mês atual
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                const day = new Date(year, month, i);
+                const el = createDayElement(day, false);
+                calendar.appendChild(el);
+            }
+
+            // Dias do próximo mês
+            for (let i = 1; i <= (7 - lastDay.getDay()) % 7; i++) {
+                const day = new Date(year, month + 1, i);
+                const el = createDayElement(day, true);
+                calendar.appendChild(el);
+            }
+
+            updateDateDisplay();
+        }
+
+        function createDayElement(date, isOtherMonth) {
+            const el = document.createElement('div');
+            el.className = 'calendar-day';
+            el.textContent = date.getDate();
+
+            if (isOtherMonth) {
+                el.classList.add('other-month');
+                return el;
+            }
+
+            // Desabilitar datas passadas
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (date < today) {
+                el.classList.add('disabled');
+                return el;
+            }
+
+            // Marcar range selecionado
+            if (startDate && endDate) {
+                if (date >= startDate && date <= endDate) {
+                    el.classList.add('range');
+                }
+                if (date.getTime() === startDate.getTime() || date.getTime() === endDate.getTime()) {
+                    el.classList.add('selected');
+                }
+            } else if (startDate && date.getTime() === startDate.getTime()) {
+                el.classList.add('selected');
+            }
+
+            // Verificar bloqueios de calendário primeiro
+            const dateStr = date.toISOString().split('T')[0];
+            const blockout = calendarBlockouts.get(dateStr);
+            if (blockout) {
+                el.classList.add('has-blockout');
+                el.style.background = `linear-gradient(135deg, ${blockout.color}aa 0%, ${blockout.color}dd 100%)`;
+                // NÃO usar pointer-events: none aqui, para que hover funcione!
+                // el.style.pointerEvents = 'none';
+                
+                // Criar tooltip
+                const tooltip = document.createElement('div');
+                tooltip.className = 'blockout-tooltip';
+                tooltip.innerHTML = `<strong>${blockout.type}</strong><br/><span style="font-size: 11px;">${blockout.observation}</span>`;
+                el.appendChild(tooltip);
+                
+                // Adicionar event listeners para mostrar/ocultar tooltip
+                el.addEventListener('mouseenter', () => {
+                  tooltip.style.visibility = 'visible';
+                  tooltip.style.opacity = '1';
+                });
+                
+                el.addEventListener('mouseleave', () => {
+                  tooltip.style.visibility = 'hidden';
+                  tooltip.style.opacity = '0';
+                });
+                
+                // Impedir clique em dias bloqueados
+                el.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                });
+                
+                console.log(`✅ Tooltip criado para ${dateStr}:`, {
+                  classes: el.className,
+                  tooltipClasses: tooltip.className
+                });
+                
+                return el;
+            }
+
+            // Marcar dias bloqueados por reservas
+            if (blockedDates.has(dateStr)) {
+                el.classList.add('blocked');
+                
+                const blockInfo = blockedDates.get(dateStr);
+                
+                // Estilo visual do dia bloqueado - UX Melhorada
+                el.style.background = `linear-gradient(135deg, #ffcccc 0%, #ffdddd 100%)`;
+                el.style.color = '#d32f2f';
+                el.style.fontWeight = 'bold';
+                el.style.border = '2px solid #d32f2f';
+                el.style.cursor = 'not-allowed';
+                el.style.position = 'relative';
+                el.style.display = 'flex';
+                el.style.alignItems = 'center';
+                el.style.justifyContent = 'center';
+                
+                // Limpar conteúdo e adicionar número centralizado
+                el.textContent = date.getDate();
+                
+                // Adicionar ícone 📋 em position absolute sem afetar o número
+                const iconSpan = document.createElement('span');
+                iconSpan.style.position = 'absolute';
+                iconSpan.style.bottom = '2px';
+                iconSpan.style.right = '2px';
+                iconSpan.style.fontSize = '10px';
+                iconSpan.textContent = '📋';
+                el.appendChild(iconSpan);
+                
+                // Criar tooltip para reserva bloqueada com melhor posicionamento
+                const tooltip = document.createElement('div');
+                tooltip.className = 'blockout-tooltip';
+                tooltip.style.position = 'fixed';
+                tooltip.style.visibility = 'hidden';
+                tooltip.style.opacity = '0';
+                tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
+                tooltip.style.color = '#FFD700';
+                tooltip.style.padding = '14px 16px';
+                tooltip.style.borderRadius = '8px';
+                tooltip.style.fontSize = '12px';
+                tooltip.style.whiteSpace = 'normal';
+                tooltip.style.width = '260px';
+                tooltip.style.maxWidth = '90vw';
+                tooltip.style.minHeight = '170px';
+                tooltip.style.zIndex = '99999';
+                tooltip.style.border = '2px solid #FFD700';
+                tooltip.style.lineHeight = '1.8';
+                tooltip.style.transition = 'visibility 0.2s, opacity 0.2s';
+                tooltip.style.pointerEvents = 'none';
+                tooltip.style.boxShadow = '0 6px 16px rgba(0,0,0,0.9)';
+                
+                tooltip.innerHTML = `
+                    <strong style="color: #FFD700; display: block; margin-bottom: 10px; font-size: 13px;">👨‍🏫 RESERVADO</strong>
+                    <span style="color: #fff; display: block; margin-bottom: 6px;"><strong>Instrutor:</strong> ${blockInfo.instructor}</span>
+                    <span style="color: #fff; display: block; margin-bottom: 6px;"><strong>Turma:</strong> ${blockInfo.turma}</span>
+                    <span style="color: #fff; display: block; margin-bottom: 8px;"><strong>Turno:</strong> ${blockInfo.shift}</span>
+                    <span style="color: ${blockInfo.status === 'approved' ? '#90EE90' : '#FFB6C1'}; display: block; font-weight: bold;"><strong>Status:</strong> ${blockInfo.status === 'approved' ? '✅ Confirmado' : '⏳ Pendente'}</span>
+                `;
+                document.body.appendChild(tooltip);
+                
+                // Event listeners para mostrar/ocultar tooltip com posicionamento inteligente
+                el.addEventListener('mouseenter', (e) => {
+                    const rect = el.getBoundingClientRect();
+                    const tooltipWidth = 260;
+                    const tooltipHeight = 185; // altura aumentada para conter status
+                    
+                    // Calcular posição X (centralizado, mas com limite de tela)
+                    let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+                    if (left < 10) left = 10;
+                    if (left + tooltipWidth > window.innerWidth - 10) {
+                        left = window.innerWidth - tooltipWidth - 10;
+                    }
+                    
+                    // Calcular posição Y (acima do dia, ou abaixo se não couber)
+                    let top = rect.top - tooltipHeight - 12;
+                    if (top < 10) {
+                        top = rect.bottom + 12;
+                    }
+                    
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = top + 'px';
+                    tooltip.style.visibility = 'visible';
+                    tooltip.style.opacity = '1';
+                });
+                
+                el.addEventListener('mouseleave', () => {
+                    tooltip.style.visibility = 'hidden';
+                    tooltip.style.opacity = '0';
+                });
+                
+                return el;
+            }
+
+            el.addEventListener('click', () => selectDate(date));
+            return el;
+        }
+
+        function selectDate(date) {
+            // Instructores podem selecionar apenas UM dia (não podem fazer bloco)
+            if (!isAdminMode) {
+                if (!startDate) {
+                    startDate = new Date(date);
+                    // Instrutor: data final = mesma data inicial (não é range)
+                    endDate = new Date(date);
+                } else {
+                    // Ao clicar novamente, troca para nova data
+                    startDate = new Date(date);
+                    endDate = new Date(date);
+                }
+            } else {
+                // Admin: pode selecionar range de datas
+                if (!startDate) {
+                    startDate = new Date(date);
+                } else if (!endDate) {
+                    if (date < startDate) {
+                        endDate = startDate;
+                        startDate = new Date(date);
+                    } else {
+                        endDate = new Date(date);
+                    }
+                } else {
+                    startDate = new Date(date);
+                    endDate = null;
+                }
+            }
+            renderCalendar();
+        }
+
+        function updateDateDisplay() {
+            const display = document.getElementById('dateDisplay');
+            if (startDate && endDate) {
+                const start = startDate.toLocaleDateString('pt-BR');
+                const end = endDate.toLocaleDateString('pt-BR');
+                display.textContent = `📅 ${start} até ${end}`;
+                display.classList.add('active');
+            } else if (startDate) {
+                display.textContent = `📅 Início: ${startDate.toLocaleDateString('pt-BR')} (clique em uma data final)`;
+                display.classList.add('active');
+            } else {
+                display.textContent = 'Nenhuma data selecionada';
+                display.classList.remove('active');
+            }
+        }
+
+        // ========== CARREGAR DIAS BLOQUEADOS ==========
+        async function loadBlockedDays() {
+            const keyId = document.getElementById('keySelect').value;
+            const shift = document.querySelector('input[name="shift"]:checked')?.value;
+
+            console.log('🔄 [BLOCKED DAYS] Iniciando busca...');
+            console.log('   keyId:', keyId);
+            console.log('   shift:', shift);
+
+            // Limpar dias bloqueados se não temos chave ou turno selecionados
+            if (!keyId || !shift) {
+                console.log('⚠️ [BLOCKED DAYS] Chave ou turno não selecionado, limpando bloqueios');
+                blockedDates.clear();
+                renderCalendar();
+                return;
+            }
+
+            try {
+                // Determinar quais turnos buscar (incluindo conflitantes)
+                let shiftsToCheck = [];
+                switch(shift) {
+                  case 'integral':
+                    shiftsToCheck = ['integral', 'matutino', 'vespertino'];
+                    console.log('   shift=integral -> verificando:', shiftsToCheck);
+                    break;
+                  case 'matutino':
+                    shiftsToCheck = ['integral', 'matutino'];
+                    console.log('   shift=matutino -> verificando:', shiftsToCheck);
+                    break;
+                  case 'vespertino':
+                    shiftsToCheck = ['integral', 'vespertino'];
+                    console.log('   shift=vespertino -> verificando:', shiftsToCheck);
+                    break;
+                  case 'noturno':
+                    shiftsToCheck = ['noturno'];
+                    console.log('   shift=noturno -> verificando:', shiftsToCheck);
+                    break;
+                }
+
+                // Fazer requisições para cada turno e combinar resultados
+                blockedDates.clear();
+                
+                for (const shiftToCheck of shiftsToCheck) {
+                    const url = `${API_BASE}/reservations?key_id=${keyId}&shift=${shiftToCheck}`;
+                    console.log(`   🌐 Buscando bloqueios para ${shiftToCheck}: ${url}`);
+                    
+                    const res = await fetch(url, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (data.success && data.data && data.data.length > 0) {
+                        const blockedReservations = data.data.filter(r => r.status === 'approved' || r.status === 'pending');
+                        console.log(`      📋 ${blockedReservations.length} reserva(s) encontrada(s) para ${shiftToCheck}`);
+                        
+                        blockedReservations.forEach(reservation => {
+                            // Parse correto das datas ISO para evitar deslocamento de timezone
+                            const [startYear, startMonth, startDay] = reservation.reservation_start_date.split('-');
+                            const startDateObj = new Date(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay));
+                            
+                            const [endYear, endMonth, endDay] = reservation.reservation_end_date.split('-');
+                            const endDateObj = new Date(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay));
+                            
+                            // Adicionar todos os dias entre startDate e endDate como bloqueados
+                            // Com as informações da reserva
+                            const current = new Date(startDateObj);
+                            while (current <= endDateObj) {
+                                const dateStr = current.toISOString().split('T')[0];
+                                if (!blockedDates.has(dateStr)) {
+                                    blockedDates.set(dateStr, {
+                                        instructor: reservation.instructor?.name || 'Sem instrutor',
+                                        turma: reservation.turma || 'Sem turma',
+                                        shift: reservation.shift || 'integral',
+                                        status: reservation.status || 'pending'
+                                    });
+                                }
+                                current.setDate(current.getDate() + 1);
+                            }
+                        });
+                    }
+                }
+                
+                console.log(`✅ [BLOCKED DAYS] Total de ${blockedDates.size} dias bloqueados`);
+                renderCalendar();
+            } catch (error) {
+                console.error('❌ [BLOCKED DAYS] Erro ao carregar dias bloqueados:', error);
+                blockedDates.clear();
+                renderCalendar();
+            }
+        }
+
+        // ========== CARREGAR BLOQUEIOS DE CALENDÁRIO ==========
+        async function loadCalendarBlockouts() {
+            try {
+                const res = await fetch(`${API_BASE}/blockouts`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                calendarBlockouts.clear();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    console.log('📥 Bloqueios carregados:', data.data.length);
+                    
+                    const blockoutTypes = {
+                        maintenance: { label: 'Manutenção', icon: '🔧' },
+                        external_event: { label: 'Evento Externo', icon: '🏢' },
+                        internal_event: { label: 'Evento Interno', icon: '📢' },
+                        national_holiday: { label: 'Feriado Nacional', icon: '🇧🇷' },
+                        state_holiday: { label: 'Feriado Estadual', icon: '🏴' },
+                        municipal_holiday: { label: 'Feriado Municipal', icon: '🏙️' }
+                    };
+
+                    data.data.forEach((blockout, idx) => {
+                        const typeInfo = blockoutTypes[blockout.blockout_type] || { label: blockout.blockout_type, icon: '📌' };
+                        
+                        console.log(`   [${idx}] ${blockout.blockout_start_date} - ${blockout.observation}`);
+                        
+                        // Iterar por cada dia no intervalo
+                        const start = new Date(blockout.blockout_start_date + 'T00:00:00');
+                        const end = new Date(blockout.blockout_end_date + 'T00:00:00');
+                        
+                        const current = new Date(start);
+                        while (current <= end) {
+                            const dateStr = current.toISOString().split('T')[0];
+                            // Se não temos bloqueio neste dia ainda, ou temos e queremos substituir
+                            if (!calendarBlockouts.has(dateStr)) {
+                                calendarBlockouts.set(dateStr, {
+                                    type: `${typeInfo.icon} ${typeInfo.label}`,
+                                    color: blockout.color || getDefaultBlockoutColor(blockout.blockout_type),
+                                    observation: blockout.observation || 'Sem descrição'
+                                });
+                            }
+                            current.setDate(current.getDate() + 1);
+                        }
+                    });
+                    
+                    console.log(`✅ [CALENDAR BLOCKOUTS] ${calendarBlockouts.size} dias com bloqueios carregados`);
+                }
+                
+                renderCalendar();
+            } catch (error) {
+                console.error('❌ [CALENDAR BLOCKOUTS] Erro ao carregar bloqueios:', error);
+                calendarBlockouts.clear();
+                renderCalendar();
+            }
+        }
+
+        // ========== CORES PADRÃO DE BLOQUEIOS ==========
+        function getDefaultBlockoutColor(type) {
+            const colors = {
+                maintenance: '#FFC107',
+                external_event: '#17A2B8',
+                internal_event: '#6C63FF',
+                national_holiday: '#DC3545',
+                state_holiday: '#FD7E14',
+                municipal_holiday: '#6F42C1'
+            };
+            return colors[type] || '#6C757D';
+        }
+
+        // ========== CARREGAR CHAVES ==========
+        async function loadKeys() {
+            try {
+                const res = await fetch(`${API_BASE}/keys/all`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    keys = data.data || [];
+                    const select = document.getElementById('keySelect');
+                    select.innerHTML = '<option value="">Selecione uma chave...</option>';
+                    keys.forEach(key => {
+                        const opt = document.createElement('option');
+                        opt.value = key.id;
+                        opt.textContent = `${key.environment} - ${key.location}`;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao carregar chaves:', error);
+                showAlert('Erro ao carregar chaves', 'error');
+            }
+        }
+
+        // ========== SUBMETER RESERVA ==========
+        document.getElementById('reservationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!startDate || !endDate) {
+                showAlert('Selecione o período completo (data inicial e final)', 'error');
+                return;
+            }
+
+            const keyId = document.getElementById('keySelect').value;
+            const shift = document.querySelector('input[name="shift"]:checked')?.value;
+            const turma = document.getElementById('turma').value;
+            const motivo = document.getElementById('motivo').value;
+
+            // Validar instrutor se for admin
+            if (isAdminMode && !selectedInstructorId) {
+                showAlert('Selecione um instrutor para criar a reserva', 'error');
+                return;
+            }
+
+            if (!keyId || !shift) {
+                showAlert('Preencha todos os campos obrigatórios', 'error');
+                return;
+            }
+
+            // DEBUG: Verificar dados antes de enviar
+            console.log('📋 Dados da Reserva:', {
+                keyId,
+                instructorId: isAdminMode ? selectedInstructorId : currentUser.id,
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
+                shift,
+                turma,
+                motivo,
+                isAdminMode
+            });
+
+            showLoading(true);
+
+            try {
+                const payload = {
+                    key_id: keyId,
+                    instructor_id: isAdminMode ? selectedInstructorId : currentUser.id,
+                    start_date: startDate.toISOString().split('T')[0],
+                    end_date: endDate.toISOString().split('T')[0],
+                    shift,
+                    turma,
+                    motivo_detalhado: motivo,
+                    created_by_admin: isAdminMode
+                };
+
+                console.log('🚀 Enviando requisição:', payload);
+
+                const res = await fetch(`${API_BASE}/reservations`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log('📨 Status da resposta:', res.status);
+
+                const data = await res.json();
+                console.log('📩 Resposta do servidor (completa):', data);
+                console.log('   Success:', data.success);
+                console.log('   Message:', data.message);
+                console.log('   Data:', data.data);
+                console.log('   Error:', data.error);
+
+                if (data.success) {
+                    const message = isAdminMode 
+                        ? '✅ Reserva criada com sucesso pelo administrador!' 
+                        : '✅ Reserva solicitada com sucesso! Aguarde aprovação do administrador.';
+                    showAlert(message, 'success');
+                    document.getElementById('reservationForm').reset();
+                    startDate = null;
+                    endDate = null;
+                    renderCalendar();
+                    loadMyReservations();
+                } else {
+                    showAlert(data.message || 'Erro ao criar reserva', 'error');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao fazer requisição:', error);
+                showAlert('Erro ao processar sua solicitação. Verifique o console para detalhes.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // ========== CARREGAR MINHAS RESERVAS ==========
+        async function loadMyReservations() {
+            try {
+                console.log('📥 [LOAD RESERVATIONS] Buscando reservas do usuário...');
+                
+                const res = await fetch(`${API_BASE}/reservations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                console.log('📨 [LOAD RESERVATIONS] Status:', res.status);
+                
+                const data = await res.json();
+                
+                console.log('📩 [LOAD RESERVATIONS] Resposta:', data);
+                console.log('   - Success:', data.success);
+                console.log('   - Message:', data.message);
+                console.log('   - Data length:', data.data?.length || 0);
+                if (data.data && data.data.length > 0) {
+                    console.log('   - Primeiro item:', data.data[0].id, data.data[0].key_name);
+                }
+
+                const container = document.getElementById('myReservations');
+                if (!data.success || !data.data || data.data.length === 0) {
+                    console.log('✅ [LOAD RESERVATIONS] Nenhuma reserva encontrada');
+                    container.innerHTML = '<p style="text-align: center; color: #95a5a6;">Você ainda não tem reservas.</p>';
+                    return;
+                }
+
+                console.log('🎨 [LOAD RESERVATIONS] Renderizando', data.data.length, 'reservas');
+
+                container.innerHTML = data.data.map(res => `
+                    <div class="reservation-card">
+                        <p><strong>Chave:</strong> ${res.key_name || res.keys?.environment || 'Carregando...'}</p>
+                        <p><strong>Lotação:</strong> ${res.key_location || res.keys?.location || 'N/A'}</p>
+                        <p><strong>Instrutor:</strong> ${res.instructor_name || res.instructor?.name || 'N/A'}</p>
+                        <p><strong>Período:</strong> ${formatDateBR(res.reservation_start_date)} até ${formatDateBR(res.reservation_end_date)}</p>
+                        <p><strong>Turno:</strong> ${res.shift}</p>
+                        <p><strong>Turma:</strong> ${res.turma}</p>
+                        <p><strong>Motivo:</strong> ${res.motivo_detalhado}</p>
+                        <span class="status-badge ${res.status}">
+                            ${res.status === 'pending' ? '⏳ Pendente' : res.status === 'approved' ? '✅ Aprovada' : '❌ Rejeitada'}
+                        </span>
+                        ${res.rejection_reason ? `<p style="color: #c0392b; margin-top: 10px;"><strong>Motivo da rejeição:</strong> ${res.rejection_reason}</p>` : ''}
+                        <button class="btn-cancel-reservation" id="cancel-${res.id}" style="margin-top: 10px; background: #e74c3c; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%;">Cancelar Reserva</button>
+                    </div>
+                `).join('');
+
+                data.data.forEach(res => {
+                    const cancelBtn = document.getElementById(`cancel-${res.id}`);
+                    if (cancelBtn) {
+                        cancelBtn.addEventListener('click', () => {
+                            console.log('🔘 [LOAD RESERVATIONS] Click event registrado para reserva:', res.id);
+                            confirmCancelReservation(res.id);
+                        });
+                    }
+                });
+                
+                console.log('✅ [LOAD RESERVATIONS] Reservas renderizadas com sucesso');
+            } catch (error) {
+                console.error('❌ [LOAD RESERVATIONS] Erro ao carregar reservas:', error);
+            }
+        }
+
+        // ========== CANCELAR RESERVA ==========
+        async function confirmCancelReservation(reservationId) {
+            console.log('🗑️ [CANCEL] Iniciando cancelamento da reserva:', reservationId);
+            
+            if (!confirm('Tem certeza que deseja cancelar esta reserva? Esta ação não pode ser desfeita.')) {
+                console.log('❌ [CANCEL] Usuário cancelou a operação');
+                return;
+            }
+
+            try {
+                const url = `${API_BASE}/reservations/${reservationId}/cancel`;
+                console.log('🌐 [CANCEL] Enviando DELETE para:', url);
+                console.log('🔐 [CANCEL] Token:', token ? '✅ Presente' : '❌ Ausente');
+                
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('📨 [CANCEL] Status da resposta:', res.status);
+
+                const data = await res.json();
+                console.log('📩 [CANCEL] Resposta completa:', data);
+
+                if (data.success) {
+                    console.log('✅ [CANCEL] Cancelamento confirmado, recarregando');
+                    showAlert('Reserva cancelada com sucesso!', 'success');
+                    loadMyReservations();
+                } else {
+                    console.error('❌ [CANCEL] Erro na resposta:', data.message);
+                    showAlert(data.message || 'Erro ao cancelar', 'error');
+                }
+            } catch (error) {
+                console.error('❌ [CANCEL] Erro na requisição:', error);
+                showAlert('Erro ao processar cancelamento: ' + error.message, 'error');
+            }
+        }
+
+        // ========== AUTO-REFRESH A CADA 20 SEGUNDOS ==========
+        setInterval(loadMyReservations, 20000);
+
+        // ========== FUNÇÕES AUXILIARES ==========
+        function showAlert(message, type = 'info') {
+            const modal = document.getElementById('modalOverlay');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const modalIcon = document.getElementById('modalIcon');
+            const modalOkBtn = document.getElementById('modalOkBtn');
+            
+            // Configurar título, ícone e estilo baseado no tipo
+            switch(type) {
+                case 'success':
+                    modalTitle.textContent = '✅ Sucesso';
+                    modalIcon.textContent = '✅';
+                    modalIcon.className = 'modal-icon modal-icon-success';
+                    modalOkBtn.className = 'modal-btn modal-btn-success';
+                    break;
+                case 'error':
+                    modalTitle.textContent = '❌ Erro';
+                    modalIcon.textContent = '❌';
+                    modalIcon.className = 'modal-icon modal-icon-error';
+                    modalOkBtn.className = 'modal-btn modal-btn-danger';
+                    break;
+                case 'warning':
+                    modalTitle.textContent = '⚠️ Aviso';
+                    modalIcon.textContent = '⚠️';
+                    modalIcon.className = 'modal-icon modal-icon-warning';
+                    modalOkBtn.className = 'modal-btn modal-btn-primary';
+                    break;
+                default:
+                    modalTitle.textContent = 'ℹ️ Informação';
+                    modalIcon.textContent = 'ℹ️';
+                    modalIcon.className = 'modal-icon modal-icon-info';
+                    modalOkBtn.className = 'modal-btn modal-btn-primary';
+            }
+            
+            // Definir mensagem
+            modalBody.innerHTML = message;
+            
+            // Mostrar modal
+            modal.classList.add('show');
+            
+            // Remover evento anterior de clique (evitar múltiplos listeners)
+            const newOkBtn = modalOkBtn.cloneNode(true);
+            modalOkBtn.parentNode.replaceChild(newOkBtn, modalOkBtn);
+            
+            // Adicionar novo listener
+            newOkBtn.addEventListener('click', () => {
+                modal.classList.remove('show');
+            });
+            
+            // Fechar também ao clicar no overlay
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('show');
+                }
+            });
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingBox').classList.toggle('show', show);
+            document.getElementById('submitBtn').disabled = show;
+        }
+
+        // ========== EVENTOS DO CALENDÁRIO ==========
+        document.getElementById('prevMonth').addEventListener('click', (e) => {
+            e.preventDefault();
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', (e) => {
+            e.preventDefault();
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        // ========== LOGOUT ==========
+        // Logout do navbar (agora removido, portanto apenas sidebar)
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_data');
+                window.location.href = 'login.html';
+            });
+        }
+
+        const sidebarLogout = document.getElementById('sidebarLogout');
+        if (sidebarLogout) {
+            sidebarLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_data');
+                window.location.href = 'login.html';
+            });
+        }
+
+        // ========== ADMIN MODE - SIDEBAR SWITCHING ==========
+        (function() {
+            // Detectar parâmetro ?admin=true
+            const urlParams = new URLSearchParams(window.location.search);
+            const isAdminMode = urlParams.get('admin') === 'true';
+            
+            console.log('🔐 [ADMIN MODE] Admin mode ativo:', isAdminMode);
+            
+            if (isAdminMode) {
+                // Mostrar sidebar admin, esconder sidebar user
+                const userSidebar = document.getElementById('userSidebar');
+                const adminSidebar = document.getElementById('adminSidebar');
+                
+                if (userSidebar) userSidebar.style.display = 'none';
+                if (adminSidebar) adminSidebar.style.display = 'block';
+                
+                // Ajustar margin do page-wrapper
+                const pageWrapper = document.querySelector('.page-wrapper');
+                if (pageWrapper) {
+                    pageWrapper.style.marginLeft = '250px';
+                }
+                
+                // Adicionar listener para logout do admin sidebar
+                const adminLogoutBtn = document.getElementById('adminSidebarLogout');
+                if (adminLogoutBtn) {
+                    adminLogoutBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        console.log('👤 [ADMIN MODE] Logout do modo admin');
+                        localStorage.removeItem('auth_token');
+                        localStorage.removeItem('user_data');
+                        window.location.href = 'login.html';
+                    });
+                }
+                
+                console.log('✅ [ADMIN MODE] Sidebar admin ativado');
+            } else {
+                // User mode (padrão)
+                const userSidebar = document.getElementById('userSidebar');
+                const adminSidebar = document.getElementById('adminSidebar');
+                
+                if (userSidebar) userSidebar.style.display = 'block';
+                if (adminSidebar) adminSidebar.style.display = 'none';
+                
+                console.log('✅ [ADMIN MODE] Sidebar user ativado');
+            }
+        })();
+
+        // ========== EVENT LISTENERS PARA CARREGAR DIAS BLOQUEADOS ==========
+        document.getElementById('keySelect').addEventListener('change', loadBlockedDays);
+        
+        // Adicionar event listeners para cada botão de turno
+        document.querySelectorAll('input[name="shift"]').forEach(input => {
+            input.addEventListener('change', loadBlockedDays);
+        });
+
+        // ========== CARREGAR INSTRUTORES (MODO ADMIN) ==========
+        async function loadInstructors() {
+            try {
+                const res = await fetch(`${API_BASE}/instructors`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.success && data.data) {
+                    const select = document.getElementById('instructorSelect');
+                    select.innerHTML = '<option value="">Selecione um instrutor...</option>';
+                    
+                    data.data.forEach(instructor => {
+                        const option = document.createElement('option');
+                        option.value = instructor.id;
+                        option.textContent = `${instructor.name} (${instructor.technical_area || 'N/A'})`;
+                        select.appendChild(option);
+                    });
+
+                    console.log('✅ Instrutores carregados:', data.data.length);
+                } else {
+                    console.error('❌ Erro ao carregar instrutores:', data.message);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao buscar instrutores:', error);
+            }
+        }
+
+        // Event listener para seleção de instrutor
+        document.getElementById('instructorSelect').addEventListener('change', (e) => {
+            selectedInstructorId = e.target.value;
+            console.log('👤 Instrutor selecionado:', selectedInstructorId);
+        });
+
+        // ========== INICIALIZAÇÃO ==========
+        window.addEventListener('load', () => {
+            // Se for modo admin, mostrar campo de instrutor
+            if (isAdminMode) {
+                document.getElementById('adminInstructorField').style.display = 'grid';
+                loadInstructors();
+                document.querySelector('h1').textContent = '➕ Criar Reserva (Admin)';
+                document.querySelector('.btn-primary').textContent = '✅ Criar Reserva Diretamente';
+                // Mostrar botão de bloqueio
+                document.getElementById('toggleBlockoutBtn').style.display = 'block';
+            }
+            
+            renderCalendar();
+            loadKeys();
+            loadMyReservations();
+            loadCalendarBlockouts();
+        });
+
+        // ========== TOGGLE ENTRE FORMULÁRIOS (RESERVA vs BLOQUEIO) ==========
+        document.getElementById('toggleBlockoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const reservationForm = document.getElementById('reservationForm');
+            const blockoutForm = document.getElementById('blockoutForm');
+            const btn = document.getElementById('toggleBlockoutBtn');
+            
+            // Toggle visibilidade
+            const isBlockoutMode = blockoutForm.style.display !== 'none';
+            
+            if (isBlockoutMode) {
+                // Voltar para modo reserva
+                reservationForm.style.display = 'block';
+                blockoutForm.style.display = 'none';
+                btn.classList.remove('active');
+                btn.textContent = '🔒 Criar Bloqueio de Ambiente';
+            } else {
+                // Ir para modo bloqueio
+                reservationForm.style.display = 'none';
+                blockoutForm.style.display = 'block';
+                btn.classList.add('active');
+                btn.textContent = '← Voltar para Reservas';
+                // Carregar chaves no select de bloqueio
+                loadKeysForBlockout();
+            }
+        });
+
+        // ========== CARREGAR CHAVES PARA BLOQUEIO ==========
+        async function loadKeysForBlockout() {
+            try {
+                const res = await fetch(`${API_BASE}/keys`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.success && data.data) {
+                    const select = document.getElementById('blockoutKeySelect');
+                    select.innerHTML = '<option value="">Selecione um ambiente...</option>';
+                    
+                    data.data.forEach(key => {
+                        const option = document.createElement('option');
+                        option.value = key.id;
+                        option.textContent = `${key.environment} (${key.location || 'Sem localização'})`;
+                        select.appendChild(option);
+                    });
+
+                    console.log('✅ Ambientes carregados para bloqueio:', data.data.length);
+                } else {
+                    console.error('❌ Erro ao carregar ambientes:', data.message);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao buscar ambientes:', error);
+            }
+        }
+
+        // ========== CANCELAR BLOQUEIO ==========
+        document.getElementById('cancelBlockoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Resetar formulário
+            document.getElementById('blockoutForm').reset();
+            
+            // Voltar para formulário de reserva
+            document.getElementById('toggleBlockoutBtn').click();
+        });
+
+        // ========== ENVIAR BLOQUEIO ==========
+        document.getElementById('blockoutForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const loadingBox = document.getElementById('blockoutLoadingBox');
+            const submitBtn = document.getElementById('submitBlockoutBtn');
+            
+            try {
+                loadingBox.style.display = 'flex';
+                submitBtn.disabled = true;
+                
+                // Preparar dados
+                const keyId = document.getElementById('blockoutKeySelect').value;
+                const startDate = document.getElementById('blockoutStartDate').value;
+                const endDate = document.getElementById('blockoutEndDate').value;
+                const shift = document.querySelector('input[name="blockoutShift"]:checked')?.value;
+                const blockoutType = document.querySelector('input[name="blockoutType"]:checked')?.value;
+                const motivo = document.getElementById('blockoutMotivo').value;
+                
+                console.log('📤 Enviando bloqueio:', {
+                    key_id: keyId,
+                    reservation_start_date: startDate,
+                    reservation_end_date: endDate,
+                    shift,
+                    blockout_type: blockoutType,
+                    motivo_detalhado: motivo
+                });
+                
+                // Enviar para API
+                const res = await fetch(`${API_BASE}/reservations/blockout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        key_id: keyId,
+                        reservation_start_date: startDate,
+                        reservation_end_date: endDate,
+                        shift,
+                        blockout_type: blockoutType,
+                        motivo_detalhado: motivo
+                    })
+                });
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    showModal('✅ Bloqueio Criado com Sucesso!', 
+                        `O bloqueio foi criado para o período de ${startDate} a ${endDate}.`, 'success');
+                    
+                    // Resetar formulário e voltar
+                    document.getElementById('blockoutForm').reset();
+                    document.getElementById('toggleBlockoutBtn').click();
+                    
+                    // Recarregar calendário
+                    setTimeout(() => {
+                        renderCalendar();
+                    }, 500);
+                } else {
+                    // Verificar se é erro de conflito
+                    if (res.status === 409) {
+                        showModal('⚠️ Período Indisponível', 
+                            `Não é possível criar bloqueio neste período. ${result.message || 'Já existe uma reserva neste período.'}`, 'warning');
+                    } else {
+                        showModal('❌ Erro ao Criar Bloqueio', result.message || 'Ocorreu um erro inesperado.', 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Erro ao criar bloqueio:', error);
+                showModal('❌ Erro de Conexão', 'Não foi possível conectar ao servidor: ' + error.message, 'error');
+            } finally {
+                loadingBox.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+    </div> <!-- Fecha page-wrapper -->
+</body>
+</html>

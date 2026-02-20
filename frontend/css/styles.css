@@ -22,7 +22,7 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--accent-color);
   color: var(--light-text);
-  line-height: 1.6;
+  line-height: 1.6; 
 }
 
 html, body {
@@ -350,7 +350,7 @@ textarea.form-control {
   display: inline-block;
   padding: 0.35rem 0.75rem;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -423,7 +423,7 @@ textarea.form-control {
 
 .table th {
   background-color: #3a3a3a;
-  padding: 1rem;
+  padding: 0.6rem 0.8rem;
   text-align: left;
   font-weight: 600;
   color: var(--primary-color);
@@ -431,7 +431,7 @@ textarea.form-control {
 }
 
 .table td {
-  padding: 1rem;
+  padding: 0.4rem 0.8rem;
   border-bottom: 1px solid #3a3a3a;
 }
 

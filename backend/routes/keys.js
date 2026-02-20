@@ -3,6 +3,7 @@ const router = express.Router();
 const keyController = require('../controllers/keyController');
 const { verifyToken, verifyAdmin } = require('../middleware/auth');
 
+router.get('/all', verifyToken, keyController.getAllKeysUnfiltered);
 router.get('/', verifyToken, keyController.getAllKeys);
 router.get('/:id', verifyToken, keyController.getKeyById);
 router.post('/by-qr', verifyToken, keyController.getKeyByQRCode);

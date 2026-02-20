@@ -160,7 +160,7 @@
     <div class="toolbar">
       <button onclick="printPage()">📄 Imprimir Tudo</button>
       <button class="secondary" onclick="downloadAllQR()">💾 Baixar Imagens</button>
-      <button class="secondary" onclick="location.href='/'">⬅️ Voltar</button>
+      <button class="secondary" onclick="location.href='/admin'">⬅️ Voltar</button>
     </div>
 
     <div id="statusMessage"></div>
@@ -236,7 +236,7 @@
           ${hasImage ? `<img src="${key.qr_code_image}" alt="QR Code" style="width: 100%; max-width: 200px;">` : '<div style="color: #999; text-align: center; padding: 2rem;">❌ Sem imagem</div>'}
           <div class="qr-code">${key.qr_code}</div>
           <p style="font-size: 0.8rem; color: #999;">
-            Localização: ${key.location}
+            Lotação: ${key.location}
           </p>
         `;
         container.appendChild(card);

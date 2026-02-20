@@ -34,10 +34,10 @@ CREATE TABLE IF NOT EXISTS key_reservations (
 );
 
 -- Índices para melhor performance
-CREATE INDEX idx_key_reservations_key_id ON key_reservations(key_id);
-CREATE INDEX idx_key_reservations_instructor_id ON key_reservations(instructor_id);
-CREATE INDEX idx_key_reservations_status ON key_reservations(status);
-CREATE INDEX idx_key_reservations_dates ON key_reservations(reservation_start_date, reservation_end_date);
+CREATE INDEX IF NOT EXISTS idx_key_reservations_key_id ON key_reservations(key_id);
+CREATE INDEX IF NOT EXISTS idx_key_reservations_instructor_id ON key_reservations(instructor_id);
+CREATE INDEX IF NOT EXISTS idx_key_reservations_status ON key_reservations(status);
+CREATE INDEX IF NOT EXISTS idx_key_reservations_dates ON key_reservations(reservation_start_date, reservation_end_date);
 
 -- ============================================
 -- 2. TABELA DE PERMISSÕES PONTUAIS
@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS key_permissions (
   -- Informações da Permissão
   permission_date DATE NOT NULL,
   shift TEXT NOT NULL CHECK (shift IN ('matutino', 'vespertino', 'noturno', 'integral')),
+  reason TEXT NOT NULL, -- Motivo obrigatório da permissão
   
   -- Quem autorizou
   authorized_by UUID NOT NULL REFERENCES instructors(id),
@@ -63,9 +64,9 @@ CREATE TABLE IF NOT EXISTS key_permissions (
 );
 
 -- Índices para melhor performance
-CREATE INDEX idx_key_permissions_key_id ON key_permissions(key_id);
-CREATE INDEX idx_key_permissions_instructor_id ON key_permissions(instructor_id);
-CREATE INDEX idx_key_permissions_date ON key_permissions(permission_date);
+CREATE INDEX IF NOT EXISTS idx_key_permissions_key_id ON key_permissions(key_id);
+CREATE INDEX IF NOT EXISTS idx_key_permissions_instructor_id ON key_permissions(instructor_id);
+CREATE INDEX IF NOT EXISTS idx_key_permissions_date ON key_permissions(permission_date);
 
 -- ============================================
 -- 3. TABELA DE MANUTENÇÃO DE AMBIENTES
@@ -80,6 +81,7 @@ CREATE TABLE IF NOT EXISTS environment_maintenance (
   -- Período de Manutenção
   maintenance_start_date DATE NOT NULL,
   maintenance_end_date DATE NOT NULL,
+  shift TEXT CHECK (shift IN ('matutino', 'vespertino', 'noturno', 'integral')), -- NULL = dia inteiro
   motivo_resumido TEXT NOT NULL, -- Ex: "Limpeza", "Reparo elétrico", etc
   
   -- Informações do Admin
@@ -89,8 +91,8 @@ CREATE TABLE IF NOT EXISTS environment_maintenance (
 );
 
 -- Índices para melhor performance
-CREATE INDEX idx_environment_maintenance_key_id ON environment_maintenance(key_id);
-CREATE INDEX idx_environment_maintenance_dates ON environment_maintenance(maintenance_start_date, maintenance_end_date);
+CREATE INDEX IF NOT EXISTS idx_environment_maintenance_key_id ON environment_maintenance(key_id);
+CREATE INDEX IF NOT EXISTS idx_environment_maintenance_dates ON environment_maintenance(maintenance_start_date, maintenance_end_date);
 
 -- ============================================
 -- 4. TABELA DE DISPONIBILIDADE DIÁRIA
@@ -119,9 +121,9 @@ CREATE TABLE IF NOT EXISTS key_availability (
 );
 
 -- Índices
-CREATE INDEX idx_key_availability_key_id ON key_availability(key_id);
-CREATE INDEX idx_key_availability_date ON key_availability(availability_date);
-CREATE INDEX idx_key_availability_search ON key_availability(key_id, availability_date, shift);
+CREATE INDEX IF NOT EXISTS idx_key_availability_key_id ON key_availability(key_id);
+CREATE INDEX IF NOT EXISTS idx_key_availability_date ON key_availability(availability_date);
+CREATE INDEX IF NOT EXISTS idx_key_availability_search ON key_availability(key_id, availability_date, shift);
 
 -- ============================================
 -- 5. POLÍTICAS RLS (ROW LEVEL SECURITY)
@@ -133,49 +135,59 @@ ALTER TABLE key_permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE environment_maintenance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE key_availability ENABLE ROW LEVEL SECURITY;
 
--- Política para key_reservations
--- Instrutores podem ver suas próprias reservas
-CREATE POLICY "Instructors can see their own reservations"
+-- Remover políticas antigas (se existirem)
+DROP POLICY IF EXISTS "Instructors can see their own reservations" ON key_reservations;
+DROP POLICY IF EXISTS "Instructors can create their own reservations" ON key_reservations;
+DROP POLICY IF EXISTS "Admins can update reservations" ON key_reservations;
+DROP POLICY IF EXISTS "Authenticated users can see reservations" ON key_reservations;
+DROP POLICY IF EXISTS "Authenticated users can create reservations" ON key_reservations;
+DROP POLICY IF EXISTS "Authenticated users can update reservations" ON key_reservations;
+
+-- Novas políticas para key_reservations
+-- Autenticados podem ver reservas (o backend faz validação adicional)
+CREATE POLICY "Authenticated users can see reservations"
   ON key_reservations FOR SELECT
-  USING (
-    instructor_id = auth.uid() OR 
-    EXISTS (SELECT 1 FROM instructors WHERE id = auth.uid() AND role = 'admin')
-  );
+  USING (true);
 
--- Instrutores podem criar reservas para si
-CREATE POLICY "Instructors can create their own reservations"
+-- Qualquer usuário autenticado pode criar reservas (vamos deixar o backend fazer a validação)
+CREATE POLICY "Authenticated users can create reservations"
   ON key_reservations FOR INSERT
-  WITH CHECK (instructor_id = auth.uid());
+  WITH CHECK (true);
 
--- Admins podem atualizar reservas (para aprovar/rejeitar)
-CREATE POLICY "Admins can update reservations"
+-- Todos podem atualizar reservas (o backend faz validação de role)
+CREATE POLICY "Authenticated users can update reservations"
   ON key_reservations FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM instructors WHERE id = auth.uid() AND role = 'admin'));
+  USING (true);
 
 -- Política para key_permissions
 -- Todos podem ler permissões (para saber se podem retirar)
+DROP POLICY IF EXISTS "Everyone can view permissions" ON key_permissions;
 CREATE POLICY "Everyone can view permissions"
   ON key_permissions FOR SELECT
   USING (TRUE);
 
 -- Apenas admins podem criar permissões
+DROP POLICY IF EXISTS "Only admins can create permissions" ON key_permissions;
 CREATE POLICY "Only admins can create permissions"
   ON key_permissions FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM instructors WHERE id = auth.uid() AND role = 'admin'));
 
 -- Política para environment_maintenance
 -- Todos podem ler (para saber quais chaves estão em manutenção)
+DROP POLICY IF EXISTS "Everyone can view maintenance" ON environment_maintenance;
 CREATE POLICY "Everyone can view maintenance"
   ON environment_maintenance FOR SELECT
   USING (TRUE);
 
 -- Apenas admins podem gerenciar manutenção
+DROP POLICY IF EXISTS "Only admins can manage maintenance" ON environment_maintenance;
 CREATE POLICY "Only admins can manage maintenance"
   ON environment_maintenance FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM instructors WHERE id = auth.uid() AND role = 'admin'));
 
 -- Política para key_availability
 -- Todos podem ler disponibilidade
+DROP POLICY IF EXISTS "Everyone can view availability" ON key_availability;
 CREATE POLICY "Everyone can view availability"
   ON key_availability FOR SELECT
   USING (TRUE);
@@ -242,16 +254,19 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers para atualizar updated_at automaticamente
+DROP TRIGGER IF EXISTS update_key_reservations_updated_at ON key_reservations;
 CREATE TRIGGER update_key_reservations_updated_at
 BEFORE UPDATE ON key_reservations
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_environment_maintenance_updated_at ON environment_maintenance;
 CREATE TRIGGER update_environment_maintenance_updated_at
 BEFORE UPDATE ON environment_maintenance
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_key_availability_updated_at ON key_availability;
 CREATE TRIGGER update_key_availability_updated_at
 BEFORE UPDATE ON key_availability
 FOR EACH ROW

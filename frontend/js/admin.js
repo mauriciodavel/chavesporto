@@ -370,31 +370,52 @@ async function loadAdminInstructors() {
 
 function displayAdminInstructors() {
   const tbody = document.getElementById('instructorsTableBody');
+  
+  // Mostrar todos os instrutores, independentemente do status
+  const filtered = adminInstructors;
 
-  if (!adminInstructors || adminInstructors.length === 0) {
+  if (!filtered || filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 2rem;">Nenhum instrutor cadastrado</td>
+        <td colspan="7" style="text-align: center; padding: 0.8rem;">Nenhum instrutor cadastrado</td>
       </tr>
     `;
     return;
   }
 
-  tbody.innerHTML = adminInstructors.map(instructor => `
-    <tr>
-      <td>${instructor.matricula}</td>
-      <td>${instructor.name}</td>
-      <td>${instructor.email}</td>
-      <td>${instructor.technical_area || '-'}</td>
-      <td>
-        <button class="btn btn-sm btn-secondary" onclick="editInstructor('${instructor.id}')">Editar</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteInstructor('${instructor.id}', '${instructor.name}')">Deletar</button>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = filtered.map(instructor => {
+    const isActive = !instructor.deleted_at;
+    return `
+      <tr>
+        <td>${instructor.matricula}</td>
+        <td>${instructor.name}</td>
+        <td>${instructor.email}</td>
+        <td>${instructor.technical_area || '-'}</td>
+        <td>
+          <span class="badge ${instructor.role === 'admin' ? 'badge-danger' : 'badge-primary'}">
+            ${instructor.role === 'admin' ? 'Administrador' : 'Instrutor'}
+          </span>
+        </td>
+        <td>
+          <span class="badge ${isActive ? 'badge-success' : 'badge-warning'}" style="font-size: 0.6rem; padding: 0.2rem 0.35rem; white-space: nowrap;">
+            ${isActive ? '✓ Ativo' : '⊘ Inativo'}
+          </span>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-secondary" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" onclick="editInstructor('${instructor.id}')">Editar</button>
+          <button class="btn btn-sm ${isActive ? 'btn-warning' : 'btn-success'}" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" onclick="toggleInstructorStatus('${instructor.id}', ${isActive})">
+            ${isActive ? 'Desativar' : 'Ativar'}
+          </button>
+          <button class="btn btn-sm btn-danger" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" onclick="deleteInstructor('${instructor.id}', '${instructor.name}')">Deletar</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
+
 function filterInstructors(searchTerm) {
+  // Aplicar filtro de busca em todos os instrutores (ativo ou inativo)
   const filtered = adminInstructors.filter(instructor =>
     instructor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     instructor.matricula.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -405,28 +426,45 @@ function filterInstructors(searchTerm) {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 2rem;">Nenhum instrutor encontrado</td>
+        <td colspan="7" style="text-align: center; padding: 0.8rem;">Nenhum instrutor encontrado</td>
       </tr>
     `;
     return;
   }
 
-  tbody.innerHTML = filtered.map(instructor => `
-    <tr>
-      <td>${instructor.matricula}</td>
-      <td>${instructor.name}</td>
-      <td>${instructor.email}</td>
-      <td>${instructor.technical_area || '-'}</td>
-      <td>
-        <button class="btn btn-sm btn-secondary" onclick="editInstructor('${instructor.id}')">Editar</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteInstructor('${instructor.id}', '${instructor.name}')">Deletar</button>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = filtered.map(instructor => {
+    const isActive = !instructor.deleted_at;
+    return `
+      <tr>
+        <td>${instructor.matricula}</td>
+        <td>${instructor.name}</td>
+        <td>${instructor.email}</td>
+        <td>${instructor.technical_area || '-'}</td>
+        <td>
+          <span class="badge ${instructor.role === 'admin' ? 'badge-danger' : 'badge-primary'}">
+            ${instructor.role === 'admin' ? 'Administrador' : 'Instrutor'}
+          </span>
+        </td>
+        <td>
+          <span class="badge ${isActive ? 'badge-success' : 'badge-warning'}" style="font-size: 0.6rem; padding: 0.2rem 0.35rem; white-space: nowrap;">
+            ${isActive ? '✓ Ativo' : '⊘ Inativo'}
+          </span>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-secondary" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" onclick="editInstructor('${instructor.id}')">Editar</button>
+          <button class="btn btn-sm ${isActive ? 'btn-warning' : 'btn-success'}" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" onclick="toggleInstructorStatus('${instructor.id}', ${isActive})">
+            ${isActive ? 'Desativar' : 'Ativar'}
+          </button>
+          <button class="btn btn-sm btn-danger" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" onclick="deleteInstructor('${instructor.id}', '${instructor.name}')">Deletar</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function resetInstructorForm() {
   document.getElementById('instructorForm').reset();
+  document.getElementById('instructorRole').value = 'instructor';
   document.getElementById('instructorModalTitle').textContent = 'Novo Instrutor';
 }
 
@@ -443,6 +481,7 @@ function editInstructor(instructorId) {
   document.getElementById('instructorPassword').value = '';
   document.getElementById('instructorPassword').placeholder = 'Deixe em branco para não alterar';
   document.getElementById('instructorTechnicalArea').value = instructor.technical_area || '';
+  document.getElementById('instructorRole').value = instructor.role || 'instructor';
 
   document.getElementById('instructorModalTitle').textContent = 'Editar Instrutor';
   openModal('instructorModal');
@@ -452,10 +491,18 @@ async function handleInstructorFormSubmit(e) {
   e.preventDefault();
 
   const password = document.getElementById('instructorPassword').value;
+  
+  // Validar se é novo instrutor (obrigatório senha)
+  if (!editingInstructorId && !password) {
+    showAlert('instructorAlert', 'Erro: Senha é obrigatória para novo instrutor', 'danger');
+    return;
+  }
+
   const formData = {
     name: document.getElementById('instructorName').value,
     email: document.getElementById('instructorEmail').value,
-    technicalArea: document.getElementById('instructorTechnicalArea').value
+    technicalArea: document.getElementById('instructorTechnicalArea').value,
+    role: document.getElementById('instructorRole').value
   };
 
   if (password) {
@@ -494,6 +541,22 @@ async function deleteInstructor(instructorId, instructorName) {
 
     if (response.success) {
       showAlert('instructorAlert', '✓ Instrutor deletado com sucesso!', 'success');
+      loadAdminInstructors();
+    }
+  } catch (error) {
+    showAlert('instructorAlert', `Erro: ${error.message}`, 'danger');
+  }
+}
+
+async function toggleInstructorStatus(instructorId, isCurrentlyActive) {
+  try {
+    const response = await ApiClient.put(`/instructors/${instructorId}/toggle-status`, {
+      shouldDeactivate: isCurrentlyActive
+    });
+
+    if (response.success) {
+      const action = isCurrentlyActive ? 'desativado' : 'ativado';
+      showAlert('instructorAlert', `✓ Instrutor ${action} com sucesso!`, 'success');
       loadAdminInstructors();
     }
   } catch (error) {
@@ -567,7 +630,7 @@ function displayHistoryTable(history) {
   if (!history || history.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" style="text-align: center; padding: 2rem;">Nenhum registro encontrado</td>
+        <td colspan="6" style="text-align: center; padding: 0.8rem;">Nenhum registro encontrado</td>
       </tr>
     `;
     return;

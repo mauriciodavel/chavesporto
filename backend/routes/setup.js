@@ -136,4 +136,62 @@ router.get('/check-observation-column', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/setup/promote-to-admin
+ * Promove um instrutor a admin pela matrícula
+ * Para facilitar testes - REMOVER EM PRODUÇÃO!
+ */
+router.post('/promote-to-admin', async (req, res) => {
+  try {
+    const { matricula } = req.body;
+
+    if (!matricula) {
+      return res.status(400).json({
+        success: false,
+        message: 'Matrícula do instrutor é obrigatória'
+      });
+    }
+
+    console.log(`🔧 Promovendo instrutor ${matricula} a admin...`);
+
+    // Atualizar role para admin
+    const { data, error } = await supabase
+      .from('instructors')
+      .update({ role: 'admin' })
+      .eq('matricula', matricula)
+      .select();
+
+    if (error) {
+      console.error('❌ Erro ao atualizar:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Erro ao promover instrutor: ' + error.message
+      });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Instrutor com esta matrícula não encontrado'
+      });
+    }
+
+    console.log('✅ Instrutor promovido a admin:', data[0]);
+
+    return res.json({
+      success: true,
+      message: `Instrutor ${data[0].name} promovido a admin com sucesso`,
+      instructor: data[0],
+      instructions: 'Faça logout e login novamente para obter os novos poderes de admin'
+    });
+
+  } catch (error) {
+    console.error('❌ Erro:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao processar: ' + error.message
+    });
+  }
+});
+
 module.exports = router;

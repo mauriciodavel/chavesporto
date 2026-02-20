@@ -248,6 +248,103 @@
       margin-top: 2rem;
     }
 
+    /* Modal-overlay styles */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background-color: var(--secondary-color);
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateY(-50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+      font-size: 24px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--light-text);
+      margin: 0;
+    }
+
+    .modal-body {
+      font-size: 15px;
+      color: var(--light-text);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .modal-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: var(--transition);
+    }
+
+    .modal-btn-primary {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .modal-btn-primary:hover {
+      background: #ff7000;
+      transform: scale(1.05);
+    }
+
+    .modal-btn-secondary {
+      background: #555;
+      color: white;
+    }
+
+    .modal-btn-secondary:hover {
+      background: #666;
+    }
+
     .history-section h2 {
       margin-bottom: 1rem;
     }
@@ -308,9 +405,88 @@
         padding: 0.5rem;
       }
     }
+
+    /* ========== MODAL POPUP ========== */
+    .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+        font-size: 24px;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--light-text);
+        margin: 0;
+    }
+
+    .modal-body {
+        font-size: 15px;
+        color: var(--light-text);
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .modal-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: var(--transition);
+    }
+
+    .modal-btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .modal-btn-primary:hover {
+        background: #ff7000;
+        transform: scale(1.05);
+    }
+
+    .modal-icon-success {
+        color: #4CAF50;
+    }
+
+    .modal-icon-error {
+        color: #f44336;
+    }
+
+    .modal-icon-warning {
+        color: #FFC107;
+    }
+
+    .modal-icon-info {
+        color: var(--primary-color);
+    }
   </style>
 </head>
 <body>
+  <!-- MODAL POPUP -->
+  <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-content">
+          <div class="modal-header">
+              <span id="modalIcon" class="modal-icon"></span>
+              <h2 class="modal-title" id="modalTitle">Mensagem</h2>
+          </div>
+          <div class="modal-body" id="modalBody"></div>
+          <div class="modal-footer">
+              <button type="button" class="modal-btn modal-btn-primary" id="modalOkBtn">OK</button>
+          </div>
+      </div>
+  </div>
+
   <div class="dashboard">
     <!-- Header -->
     <div class="dashboard-header">
@@ -322,6 +498,8 @@
         <div class="dashboard-user-info">
           <div class="user-name" id="userName">Carregando...</div>
           <div class="user-area" id="userArea">-</div>
+          <a href="/reservar-chave" class="btn btn-sm btn-primary" style="display: inline-block; margin: 0.5rem 0; text-decoration: none;">📅 Minhas Reservas</a>
+          <button class="btn btn-sm btn-warning" id="changePasswordBtn" style="margin: 0.5rem 0.25rem 0.5rem 0;">🔐 Alterar Senha</button>
           <button class="btn btn-sm btn-secondary btn-logout" id="logoutBtn">Sair</button>
         </div>
       </div>
@@ -347,7 +525,37 @@
 
       <!-- Keys Section -->
       <div class="keys-section">
-        <h2>Chaves Disponíveis</h2>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+          <h2 id="keysSectionTitle">Chaves Disponíveis</h2>
+          
+          <!-- Filter Buttons -->
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0; color: #999; font-size: 0.9rem; user-select: none;">
+              <input 
+                type="radio" 
+                name="keyFilter" 
+                value="available" 
+                checked
+                id="filterAvailable"
+                onclick="changeKeyFilter('available')"
+                style="cursor: pointer; margin: 0;"
+              />
+              Disponíveis
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0; color: #999; font-size: 0.9rem; user-select: none;">
+              <input 
+                type="radio" 
+                name="keyFilter" 
+                value="late"
+                id="filterLate"
+                onclick="changeKeyFilter('late')"
+                style="cursor: pointer; margin: 0;"
+              />
+              Em Atraso
+            </label>
+          </div>
+        </div>
+        
         <div class="keys-grid" id="keysContainer">
           <div class="empty-state">
             <div class="empty-state-icon">⏳</div>
@@ -395,6 +603,76 @@
         <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
 
         <div id="qrStatus" style="margin-top: 1rem; color: #999; font-size: 0.875rem;"></div>
+      </div>
+    </div>
+
+    <!-- Modal: Chave Indisponível com Reserva -->
+    <div class="modal-overlay" id="unavailableKeyModal">
+      <div class="modal-content" style="background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); border: 2px solid var(--primary-color);">
+        <div class="modal-header">
+          <span style="font-size: 2rem;">⚠️</span>
+          <h2 class="modal-title">Chave Indisponível</h2>
+        </div>
+        <div class="modal-body" style="text-align: center;">
+          <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
+            <strong id="unavailableKeyName">Carregando...</strong>
+          </p>
+          
+          <div style="background-color: #3a3a3a; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid var(--warning-color);">
+            <p style="color: #FFD700; font-size: 0.9rem; margin: 0.5rem 0;">
+              <strong>🔑 Status:</strong> Em uso
+            </p>
+            <p style="color: var(--light-text); font-size: 0.95rem; margin: 0.5rem 0;">
+              <strong>👤 Com:</strong> <span id="instructorWithKey" style="color: var(--primary-color); font-weight: bold;">-</span>
+            </p>
+            <p style="color: #999; font-size: 0.85rem; margin: 0.5rem 0;">
+              <strong>🕐 Desde:</strong> <span id="sinceTime">-</span>
+            </p>
+          </div>
+
+          <div style="background-color: rgba(255, 140, 0, 0.1); padding: 1.2rem; border-radius: 8px; border: 1px solid rgba(255, 140, 0, 0.3);">
+            <p style="margin-top: 0; color: var(--light-text); font-size: 0.95rem;">
+              <strong>📌 O que fazer:</strong>
+            </p>
+            <ul style="text-align: left; margin: 1rem 0; padding-left: 1.5rem; color: #ccc; font-size: 0.9rem;">
+              <li style="margin-bottom: 0.8rem;">Procure o instrutor <strong id="instructorNameAgain" style="color: var(--primary-color);">-</strong> para resgatar a chave</li>
+              <li style="margin-bottom: 0.8rem;">Ou contacte a <strong style="color: #FFD700;">supervisão</strong> para auxílio</li>
+              <li>A chave será devolvida conforme o horário registrado</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="modal-btn modal-btn-secondary" id="closeUnavailableBtn">Entendido</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Alterar Senha -->
+    <div class="modal-overlay" id="changePasswordOverlay">
+      <div class="modal-content" style="width: 90%; max-width: 400px;">
+        <div class="modal-header">
+          <h2 class="modal-title">🔐 Alterar Senha</h2>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom: 1rem;">
+            <label for="currentPassword" style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">Senha Atual:</label>
+            <input type="password" id="currentPassword" placeholder="Digite sua senha atual" style="width: 100%; padding: 0.75rem; border: 1px solid #555; border-radius: 4px; background-color: #2a2a2a; color: #fff;">
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <label for="newPassword" style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">Nova Senha:</label>
+            <input type="password" id="newPassword" placeholder="Digite a nova senha" style="width: 100%; padding: 0.75rem; border: 1px solid #555; border-radius: 4px; background-color: #2a2a2a; color: #fff;">
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <label for="confirmPassword" style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">Repetir Senha:</label>
+            <input type="password" id="confirmPassword" placeholder="Digite a nova senha novamente" style="width: 100%; padding: 0.75rem; border: 1px solid #555; border-radius: 4px; background-color: #2a2a2a; color: #fff;">
+          </div>
+          <div id="changePasswordError" style="display: none; padding: 0.75rem; background-color: #f8d7da; color: #721c24; border-radius: 4px; margin-bottom: 1rem; font-size: 0.875rem;"></div>
+          <div id="changePasswordSuccess" style="display: none; padding: 0.75rem; background-color: #d4edda; color: #155724; border-radius: 4px; margin-bottom: 1rem; font-size: 0.875rem;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="modal-btn modal-btn-primary" id="submitChangePassword" style="background-color: #007bff;">Alterar Senha</button>
+          <button type="button" class="modal-btn" id="cancelChangePassword" style="background-color: #6c757d;">Cancelar</button>
+        </div>
       </div>
     </div>
   </div>
