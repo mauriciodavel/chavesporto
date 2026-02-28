@@ -24,8 +24,8 @@ const setupRoutes = require('./routes/setup');
 const reservationRoutes = require('./routes/reservationRoutes');
 const blockoutRoutes = require('./routes/blockouts');
 
-// Importar jobs
-const { checkLateReturns } = require('./jobs/checkLateReturns');
+// Importar schedulers
+const { initializeScheduler } = require('./jobs/scheduleNotifications');
 
 // Usar rotas
 app.use('/api/auth', authRoutes);
@@ -85,20 +85,17 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-// Inicializar job de verificação de devoluções em atraso
-// Executa a cada 30 minutos para verificar chaves não devolvidas
+// Inicializar agendador de notificações para chaves não devolvidas
+// Com jobs em horários específicos: 12:30, 18:30, 22:35 (30 min após fim de cada turno)
+// E failsafe a cada 15 minutos
 if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.ALERT_EMAIL) {
-  console.log('📧 Email service iniciado - verificando devoluções em atraso a cada 30 minutos');
-  
-  // Executar uma vez ao iniciar
-  checkLateReturns();
-  
-  // Agendar para rodar a cada 30 minutos (1800000 ms)
-  setInterval(() => {
-    checkLateReturns();
-  }, 30 * 60 * 1000);
+  console.log('📧 Serviço de email detectado - inicializando agendador de notificações');
+  initializeScheduler();
 } else {
-  console.log('⚠️  Email service DESATIVADO - configure SMTP_HOST, SMTP_USER, ALERT_EMAIL para ativar');
+  console.warn('\n⚠️  AVISO: Email não configurado!');
+  console.warn('   Para ativar notificações de chaves não devolvidas, configure:');
+  console.warn('   - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ALERT_EMAIL');
+  console.warn('   Veja o arquivo .env.example para mais detalhes\n');
 }
 
 // Exportar para Vercel

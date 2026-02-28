@@ -1,0 +1,200 @@
+# 🎯 SOLUÇÃO: Sistema de Notificação de Chaves Não Devolvidas
+
+## O Problema (Relatado ontem)
+
+```
+Chave retirada no noturno (22:10) - NÃO foi devolvida até 22:30
+        ↓
+Sistema NÃO notificou o instrutor nem o administrador  ❌
+```
+
+## A Causa
+
+O sistema antigo verificava a cada **30 minutos**:
+- Se começasse em 13:00 → próximas: 13:30, 14:00, 14:30, 15:00...
+- Poderia rodar em 22:00, depois 22:30... mas nunca exatamente em 22:35 quando é *crítico*
+- Ou rodar em 22:00 (antes do fim) e depois em 22:30 (exatamente na hora limite)
+
+## A Solução Implementada ✅
+
+Agora o sistema executa **EXATAMENTE** nos horários críticos:
+
+```
+░░░ 11:30 - FIM DO TURNO MATUTINO ░░░
+              ↓ (30 min para devolver)
+            12:00 - DEADLINE
+              ↓
+           12:30 - 🔔 VERIFICAÇÃO (executa automaticamente)
+            
+─────────────────────────────────────
+
+░░░ 17:30 - FIM DO TURNO VESPERTINO ░░░
+              ↓ (30 min para devolver)
+            18:00 - DEADLINE
+              ↓
+           18:30 - 🔔 VERIFICAÇÃO (executa automaticamente)
+
+─────────────────────────────────────
+
+░░░ 22:00 - FIM DO TURNO NOTURNO ░░░
+              ↓ (30 min para devolver)
+            22:30 - DEADLINE
+              ↓
+           22:35 - 🔔 VERIFICAÇÃO (executa automaticamente)
+```
+
+## O que mudou no código
+
+### 1. **Instalação de nova dependência**
+```bash
+npm install node-cron    # Agendador preciso de tarefas
+```
+
+### 2. **Novo arquivo: `backend/jobs/scheduleNotifications.js`**
+Usa `node-cron` para agendar:
+- ✅ 12:30 - Verificação do matutino
+- ✅ 18:30 - Verificação do vespertino
+- ✅ 22:35 - Verificação do noturno (5 min após deadline)
+- ✅ A cada 15 min - Failsafe (redundância)
+
+### 3. **Melhorado: `backend/jobs/checkLateReturns.js`**
+- Logs muito mais detalhados
+- Identifica chaves dias em atraso
+- Rastreia quando emails foram enviados
+
+### 4. **Atualizado: `backend/server.js`**
+- Tira do antigo setInterval
+- Usa novo agendador com node-cron
+
+## 4 Passos para Ativar
+
+### 1️⃣ Instalar dependência (1 minuto)
+```bash
+cd backend
+npm install node-cron
+```
+
+### 2️⃣ Configurar email (backend/.env)
+```env
+SMTP_HOST=seu_host_smtp    # Ex: smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=seu_email        # Ex: seu_email@gmail.com
+SMTP_PASS=sua_senha        # ⚠️ Gmail: usar App Password
+ALERT_EMAIL=admin@seu_dominio.com
+```
+
+**[Para Gmail clique aqui](https://myaccount.google.com/apppasswords)** para gerar App Password
+
+### 3️⃣ Reiniciar servidor
+```bash
+npm start
+```
+
+Você verá:
+```
+======================================================================
+⏰ INICIALIZANDO AGENDADOR DE NOTIFICAÇÕES
+======================================================================
+✅ Serviço de email configurado
+
+📅 Agendamentos configurados:
+   ✓ 12:30 - Verificação após turno MATUTINO
+   ✓ 18:30 - Verificação após turno VESPERTINO
+   ✓ 22:35 - Verificação após turno NOTURNO
+   ✓ A cada 15 min - Failsafe/redundância
+======================================================================
+```
+
+### 4️⃣ Testar (opcional)
+```bash
+# Teste rápido de todas as configurações
+node backend/scripts/test-notifications.js
+
+# Ou force verificação imediata
+node backend/jobs/checkLateReturns.js
+```
+
+## Fluxo Automático de Notificações
+
+```
+⏰ 22:35 (5 min após deadline de 22:30)
+   │
+   ├─ 🔍 Detecta: LAB-001 não foi devolvida
+   │
+   ├─ 📧 Envia ALERTA para:
+   │  ├─ Instrutor (João Silva)
+   │  └─ Administrador
+   │
+   ├─ 💾 Registra: email_first_alert_sent_at = 22:35
+   │
+   └─ ⏳ Aguarda 24 horas...
+   
+─────────────────────────────────────
+⏰ Próximo dia, 22:35 (ou 12:30/18:30)
+   │
+   ├─ 🔍 Ainda não foi devolvida?
+   │
+   ├─ 📧 Envia RECOBRANÇA para:
+   │  ├─ Instrutor (João Silva)
+   │  └─ Administrador
+   │
+   └─ 💾 Registra: email_reminder_sent_at = [data/hora]
+```
+
+## O Sistema Está Pronto!
+
+Arquivos criados/modificados:
+
+| Arquivo | Status | Descrição |
+|---------|--------|-----------|
+| `backend/package.json` | ✅ Modificado | Adicionado node-cron |
+| `backend/server.js` | ✅ Modificado | Usa novo agendador |
+| `backend/jobs/checkLateReturns.js` | ✅ Melhorado | Logs + detalhes |
+| `backend/jobs/scheduleNotifications.js` | ✅ NOVO | Agendador preciso |
+| `backend/scripts/test-notifications.js` | ✅ NOVO | Script de teste |
+| `SETUP_NOTIFICACOES_CHAVES.md` | ✅ NOVO | Guia detalhado |
+| `NOTIFICACOES_RESOLVIDO.md` | ✅ NOVO | Este arquivo |
+
+---
+
+## ❓ Perguntas Frequentes
+
+**P: Como faço para ativar?**  
+R: Execute: `npm install node-cron` no backend/, configure .env e reinicie
+
+**P: E se o servidor reiniciar?**  
+R: O agendador é reinicializado automaticamente e recupera alertas pendentes
+
+**P: Como faço para testar sem esperar 22:35?**  
+R: Execute: `node backend/jobs/checkLateReturns.js`
+
+**P: Onde vejo os emails que foram enviados?**  
+R: Banco de dados, tabela `key_history`:
+- `email_first_alert_sent_at` - Quando 1º email foi enviado
+- `email_reminder_sent_at` - Quando recobrança foi enviada
+
+**P: Gmail não funciona com minha senha**  
+R: Gmail requer App Password. [Gere aqui](https://myaccount.google.com/apppasswords)
+
+---
+
+## 🚀 Próximos Passos
+
+1. Execute: `npm install node-cron`
+2. Configure `.env` com credenciais SMTP
+3. Reinicie: `npm start`
+4. Teste: `node backend/scripts/test-notifications.js`
+5. Pronto! Sistema automático 24/7
+
+---
+
+## 📞 Referências Rápidas
+
+- **Configuração completa**: [SETUP_NOTIFICACOES_CHAVES.md](./SETUP_NOTIFICACOES_CHAVES.md)
+- **Horários dos turnos**: `backend/utils/shiftTimes.js`
+- **Verificação manual**: `node backend/jobs/checkLateReturns.js`
+- **Script de teste**: `node backend/scripts/test-notifications.js`
+
+---
+
+**Status**: ✅ Implementado e pronto para ativar!
