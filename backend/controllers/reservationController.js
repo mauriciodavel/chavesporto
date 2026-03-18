@@ -635,7 +635,7 @@ exports.cancelReservation = async (req, res) => {
     console.log('❌ [CANCEL RESERVATION] Cancelando reserva ID:', id, 'por usuário:', userId);
 
     // Buscar reserva
-    const { data: reservation, error: fetchError } = await supabase
+    const { data: reservation, error: fetchError } = await supabase.admin
       .from("key_reservations")
       .select("*")
       .eq("id", id)
@@ -660,25 +660,38 @@ exports.cancelReservation = async (req, res) => {
       });
     }
 
-    // Deletar reserva (usando .eq para delete)
-    const { error } = await supabase
+    // Deletar reserva (usando admin para bypass RLS)
+    console.log('   🗑️  Executando DELETE...');
+    const { data: deleteResponse, error: deleteError } = await supabase.admin
       .from("key_reservations")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .select();
 
     console.log('🗑️ [CANCEL RESERVATION] Delete executado');
-    console.log('   Error:', error);
-    console.log('   Error code:', error?.code);
-    console.log('   Error message:', error?.message);
-    console.log('   Error status:', error?.status);
-    console.log('   Error details:', JSON.stringify(error, null, 2));
+    console.log('   Rows affected:', deleteResponse?.length || 0);
+    console.log('   Error:', deleteError);
 
-    if (error) {
-      console.error('❌ [CANCEL RESERVATION] Erro ao deletar:', error);
+    if (deleteError) {
+      console.error('❌ [CANCEL RESERVATION] Erro ao deletar:', deleteError);
       return res.status(400).json({
         success: false,
-        message: "Erro ao cancelar reserva: " + error.message,
-        errorDetails: error
+        message: "Erro ao cancelar reserva: " + deleteError.message,
+        errorDetails: deleteError
+      });
+    }
+
+    // Verificação final
+    const { data: checkAfter } = await supabase.admin
+      .from("key_reservations")
+      .select("id")
+      .eq("id", id);
+
+    if (checkAfter && checkAfter.length > 0) {
+      console.error('❌ [CANCEL RESERVATION] Reserva ainda existe após DELETE!');
+      return res.status(400).json({
+        success: false,
+        message: "Falha ao cancelar: reserva ainda existe no banco"
       });
     }
 
@@ -690,6 +703,7 @@ exports.cancelReservation = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ [CANCEL RESERVATION] Erro CATCH:", error);
+    console.error("   Stack:", error.stack);
     return res.status(500).json({
       success: false,
       message: "Erro ao cancelar reserva",
@@ -874,9 +888,11 @@ exports.deleteReservation = async (req, res) => {
     const adminId = req.user.id;
 
     console.log('🗑️ [DELETE RESERVATION] Deletando reserva:', id, 'por admin:', adminId);
+    console.log('   supabase.admin disponível?', !!supabase.admin);
 
     // Buscar reserva antes de deletar (para log)
-    const { data: reservation, error: fetchError } = await supabase
+    console.log('   📥 Buscando reserva com supabase.admin...');
+    const { data: reservation, error: fetchError } = await supabase.admin
       .from("key_reservations")
       .select("*")
       .eq("id", id)
@@ -891,26 +907,45 @@ exports.deleteReservation = async (req, res) => {
     }
 
     console.log('📋 [DELETE RESERVATION] Reserva encontrada:', reservation.id);
+    console.log('   Chave:', reservation.key_id);
+    console.log('   Status:', reservation.status);
 
-    // Deletar reserva (usando .eq para delete)
-    const { error } = await supabase
+    // Deletar reserva (usando admin client para bypass RLS)
+    console.log('   🗑️  Executando DELETE...');
+    const { data: deleteResponse, error: deleteError } = await supabase.admin
       .from("key_reservations")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .select(); // Retornar dados deletados para confirmar
 
     console.log('🗑️ [DELETE RESERVATION] Delete executado');
-    console.log('   Error:', error);
-    console.log('   Error code:', error?.code);
-    console.log('   Error message:', error?.message);
-    console.log('   Error status:', error?.status);
-    console.log('   Error details:', JSON.stringify(error, null, 2));
+    console.log('   Resposta:', deleteResponse);
+    console.log('   Error:', deleteError);
+    console.log('   Rows affected:', deleteResponse?.length || 0);
 
-    if (error) {
-      console.error("❌ [DELETE RESERVATION] Erro ao deletar:", error);
+    if (deleteError) {
+      console.error("❌ [DELETE RESERVATION] Erro ao deletar:", deleteError);
       return res.status(400).json({
         success: false,
-        message: "Erro ao deletar reserva: " + error.message,
-        errorDetails: error
+        message: "Erro ao deletar reserva: " + deleteError.message,
+        errorDetails: deleteError
+      });
+    }
+
+    // Verificação final: tentar buscar novamente para confirmar deleção
+    console.log('   ✓ Verificando se foi realmente deletada...');
+    const { data: checkAfter, error: checkError } = await supabase.admin
+      .from("key_reservations")
+      .select("id")
+      .eq("id", id);
+
+    console.log('   Resultado da verificação - Registros encontrados:', checkAfter?.length || 0);
+    
+    if (checkAfter && checkAfter.length > 0) {
+      console.error("❌ [DELETE RESERVATION] Reserva ainda existe após DELETE!");
+      return res.status(400).json({
+        success: false,
+        message: "Falha ao deletar: reserva ainda existe no banco"
       });
     }
 
@@ -922,6 +957,7 @@ exports.deleteReservation = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ [DELETE RESERVATION] Erro CATCH:", error);
+    console.error("   Stack:", error.stack);
     return res.status(500).json({
       success: false,
       message: "Erro ao deletar reserva",

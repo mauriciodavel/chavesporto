@@ -2322,8 +2322,8 @@
                     },
                     body: JSON.stringify({
                         key_id: keyId,
-                        reservation_start_date: startDate,
-                        reservation_end_date: endDate,
+                        start_date: startDate,
+                        end_date: endDate,
                         shift,
                         blockout_type: blockoutType,
                         motivo_detalhado: motivo
@@ -2333,8 +2333,7 @@
                 const result = await res.json();
                 
                 if (result.success) {
-                    showModal('✅ Bloqueio Criado com Sucesso!', 
-                        `O bloqueio foi criado para o período de ${startDate} a ${endDate}.`, 'success');
+                    showAlert('✅ Bloqueio Criado com Sucesso!\n\nO bloqueio foi criado para o período de ' + startDate + ' a ' + endDate + '.', 'success');
                     
                     // Resetar formulário e voltar
                     document.getElementById('blockoutForm').reset();
@@ -2347,15 +2346,14 @@
                 } else {
                     // Verificar se é erro de conflito
                     if (res.status === 409) {
-                        showModal('⚠️ Período Indisponível', 
-                            `Não é possível criar bloqueio neste período. ${result.message || 'Já existe uma reserva neste período.'}`, 'warning');
+                        showAlert('⚠️ Período Indisponível\n\nNão é possível criar bloqueio neste período. ' + (result.message || 'Já existe uma reserva neste período.'), 'warning');
                     } else {
-                        showModal('❌ Erro ao Criar Bloqueio', result.message || 'Ocorreu um erro inesperado.', 'error');
+                        showAlert('❌ Erro ao Criar Bloqueio\n\n' + (result.message || 'Ocorreu um erro inesperado.'), 'error');
                     }
                 }
             } catch (error) {
                 console.error('❌ Erro ao criar bloqueio:', error);
-                showModal('❌ Erro de Conexão', 'Não foi possível conectar ao servidor: ' + error.message, 'error');
+                showAlert('❌ Erro de Conexão\n\nNão foi possível conectar ao servidor: ' + error.message, 'error');
             } finally {
                 loadingBox.style.display = 'none';
                 submitBtn.disabled = false;
