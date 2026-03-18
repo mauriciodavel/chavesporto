@@ -139,6 +139,7 @@ class BlockoutController {
     try {
       console.log('📝 [createBlockout] Iniciando criação de bloqueio');
       console.log('   Usuário:', req.user);
+      console.log('   supabase.admin disponível?', !!supabase.admin);
       
       const instructorId = req.user?.id;
       if (!instructorId) {
@@ -210,6 +211,7 @@ class BlockoutController {
       };
 
       console.log('   Inserindo dados:', blockoutData);
+      console.log('   Usando supabase.admin (com service_role bypass)...');
 
       const { data, error } = await supabase.admin
         .from('calendar_blockouts')
@@ -218,6 +220,10 @@ class BlockoutController {
 
       if (error) {
         console.error('❌ [createBlockout] Erro Supabase:', error);
+        console.error('   Código:', error.code);
+        console.error('   Mensagem:', error.message);
+        console.error('   Hint:', error.hint);
+        console.error('   Details:', error.details);
         throw error;
       }
 
