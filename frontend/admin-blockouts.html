@@ -990,6 +990,15 @@
         return;
       }
 
+      // Capturar dados do formulário ANTES de fazer reset
+      const formData = {
+        dateType: dateType,
+        blockoutStartDate: blockoutStartDate,
+        blockoutEndDate: blockoutEndDate,
+        shift: shift,
+        blockoutType: blockoutType
+      };
+
       const payload = {
         blockout_date: blockoutStartDate,
         blockout_start_date: blockoutStartDate,
@@ -1020,7 +1029,7 @@
         }
 
         document.getElementById('blockoutForm').reset();
-        showSuccessCreateModal();
+        showSuccessCreateModal(formData);
         await loadBlockouts();
       } catch (error) {
         console.error('❌ [handleFormSubmit] Erro:', error);
@@ -1253,30 +1262,37 @@
     }
 
     // FUNCS - SUCESSO AO CRIAR BLOQUEIO
-    function showSuccessCreateModal(blockoutData = {}) {
+    function showSuccessCreateModal(formData = {}) {
       const detailsDiv = document.getElementById('successCreateDetails');
-      const dateType = document.querySelector('input[name="dateType"]:checked')?.value;
-      const blockoutType = document.querySelector('input[name="blockoutType"]:checked')?.value;
-      const shift = document.getElementById('shift')?.value || null;
 
       let detailsHTML = '';
-      
-      if (dateType === 'single') {
-        const date = document.getElementById('blockoutDate').value;
-        detailsHTML += `<div class="modal-details-item"><span class="modal-details-label">📅 Data:</span><span class="modal-details-value">${formatDate(date)}</span></div>`;
-      } else {
-        const startDate = document.getElementById('blockoutStartDate').value;
-        const endDate = document.getElementById('blockoutEndDate').value;
-        detailsHTML += `<div class="modal-details-item"><span class="modal-details-label">Período:</span><span class="modal-details-value">${formatDate(startDate)} a ${formatDate(endDate)}</span></div>`;
+
+      try {
+        // Usar dados passados ou tentar recuperar do formulário
+        const dateType = formData.dateType || document.querySelector('input[name="dateType"]:checked')?.value;
+        const blockoutType = formData.blockoutType || document.querySelector('input[name="blockoutType"]:checked')?.value;
+        const shift = formData.shift;
+
+        if (dateType === 'single' && formData.blockoutStartDate) {
+          detailsHTML += `<div class="modal-details-item"><span class="modal-details-label">📅 Data:</span><span class="modal-details-value">${formatDate(formData.blockoutStartDate)}</span></div>`;
+        } else if (dateType === 'range' && formData.blockoutStartDate && formData.blockoutEndDate) {
+          detailsHTML += `<div class="modal-details-item"><span class="modal-details-label">Período:</span><span class="modal-details-value">${formatDate(formData.blockoutStartDate)} a ${formatDate(formData.blockoutEndDate)}</span></div>`;
+        }
+
+        if (shift) {
+          detailsHTML += `<div class="modal-details-item"><span class="modal-details-label">Turno:</span><span class="modal-details-value">${getShiftLabel(shift)}</span></div>`;
+        }
+
+        if (blockoutType) {
+          detailsHTML += `<div class="modal-details-item"><span class="modal-details-label">Tipo:</span><span class="modal-details-value">${BLOCKOUT_TYPES[blockoutType]?.label || blockoutType}</span></div>`;
+        }
+
+        detailsDiv.innerHTML = detailsHTML || '<p style="color: #999;">Bloqueio criado com sucesso!</p>';
+      } catch (error) {
+        console.error('❌ Erro ao processar dados do modal:', error);
+        detailsDiv.innerHTML = '<p style="color: #999;">Bloqueio criado com sucesso!</p>';
       }
 
-      if (shift) {
-        detailsHTML += `<div class="modal-details-item"><span class="modal-details-label">Turno:</span><span class="modal-details-value">${getShiftLabel(shift)}</span></div>`;
-      }
-
-      detailsHTML += `<div class="modal-details-item"><span class="modal-details-label">Tipo:</span><span class="modal-details-value">${BLOCKOUT_TYPES[blockoutType]?.label || blockoutType}</span></div>`;
-
-      detailsDiv.innerHTML = detailsHTML;
       document.getElementById('successCreateModal').classList.add('show');
     }
 
