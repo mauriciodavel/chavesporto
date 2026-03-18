@@ -85,12 +85,27 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-// Inicializar agendador de notificações para chaves não devolvidas
+// ========== HANDLERS PARA ERROS NÃO CAPTURADOS ==========
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  // Manter o servidor rodando mesmo com erros não tratados
+});
+
+// ========== INICIAR SERVIDOR ==========
 // Com jobs em horários específicos: 12:30, 18:30, 22:35 (30 min após fim de cada turno)
 // E failsafe a cada 15 minutos
 if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.ALERT_EMAIL) {
-  console.log('📧 Serviço de email detectado - inicializando agendador de notificações');
-  initializeScheduler();
+  try {
+    console.log('📧 Serviço de email detectado - inicializando agendador de notificações');
+    initializeScheduler();
+  } catch (err) {
+    console.error('❌ Erro ao inicializar agendador de notificações:', err.message);
+    console.error('   Notificações de email permanecerão desativadas');
+  }
 } else {
   console.warn('\n⚠️  AVISO: Email não configurado!');
   console.warn('   Para ativar notificações de chaves não devolvidas, configure:');

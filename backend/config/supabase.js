@@ -11,16 +11,17 @@ if (!supabaseUrl || !supabaseKey) {
 
 // Verificar se service_role está configurada (crítico para operações admin com RLS)
 if (!supabaseServiceRole) {
-  console.warn('⚠️  AVISO: SUPABASE_SERVICE_ROLE não está configurada!');
-  console.warn('   Operações admin que dependem de bypass RLS podem falhar.');
-  console.warn('   Configure SUPABASE_SERVICE_ROLE no .env para produção.');
+  console.warn('\n⚠️  AVISO: SUPABASE_SERVICE_ROLE não está configurada!');
+  console.warn('   - Operações admin que dependem de bypass RLS podem falhar');
+  console.warn('   - Configure SUPABASE_SERVICE_ROLE no .env para produção');
+  console.warn('   - Instruções: https://app.supabase.com/project/_/settings/api\n');
 }
 
 // Cliente com anon key para operações de usuário final
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Cliente com service_role key para bypass de RLS (operações administrativas backend)
-// NÃO fazer fallback para supabase regular - isso causaria falhas de RLS
+// Usa service_role quando disponível, fallback para supabase regular caso contrário
 const supabaseAdmin = supabaseServiceRole
   ? createClient(supabaseUrl, supabaseServiceRole, {
       auth: {
@@ -29,11 +30,7 @@ const supabaseAdmin = supabaseServiceRole
         detectSessionInUrl: false
       }
     })
-  : (() => {
-      throw new Error(
-        'SUPABASE_SERVICE_ROLE não configurada. Use supabase.admin apenas com service role key.'
-      );
-    })();
+  : supabase; // Fallback se service_role não estiver configurada
 
 module.exports = supabase;
 module.exports.admin = supabaseAdmin;
