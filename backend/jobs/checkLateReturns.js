@@ -225,12 +225,3 @@ if (require.main === module) {
   require('dotenv').config();
   checkLateReturns().then(() => process.exit(0));
 }
-
-// Exportar função
-module.exports = { checkLateReturns };
-
-// Se rodado diretamente, executar uma vez
-if (require.main === module) {
-  require('dotenv').config();
-  checkLateReturns().then(() => process.exit(0));
-}

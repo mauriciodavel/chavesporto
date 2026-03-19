@@ -4,6 +4,14 @@
 const cron = require('node-cron');
 const { checkLateReturns } = require('./checkLateReturns');
 
+// Rastrear estado do scheduler
+let schedulerState = {
+  initialized: false,
+  jobs: [],
+  lastRun: null,
+  errorCount: 0
+};
+
 /**
  * Inicializa o sistema de agendamento de notificações
  * Horários configurados:
@@ -17,68 +25,91 @@ function initializeScheduler() {
   console.log('⏰ INICIALIZANDO AGENDADOR DE NOTIFICAÇÕES');
   console.log('='.repeat(70));
   
-  // Verificar se variáveis de ambiente estão configuradas
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
+  // Verificar variáveis obrigatórias
+  const emailConfigOK = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.ALERT_EMAIL;
+  const supabaseConfigOK = process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY;
+  
+  if (!emailConfigOK) {
     console.error('❌ ERRO: Variáveis de email não configuradas!');
     console.error('   Configure SMTP_HOST, SMTP_USER, SMTP_PASS e ALERT_EMAIL no .env');
-    console.log('   As notificações por email NÃO FUNCIONARÃO até essa configuração!\n');
-  } else {
-    console.log('✅ Serviço de email configurado');
-    console.log(`   SMTP: ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}`);
-    console.log(`   Alerta para: ${process.env.ALERT_EMAIL}\n`);
+    console.error('   As notificações por email NÃO FUNCIONARÃO até essa configuração!\n');
+    return;
+  }
+  
+  if (!supabaseConfigOK) {
+    console.error('❌ ERRO: Variáveis do Supabase não configuradas!');
+    console.error('   Configure SUPABASE_URL e SUPABASE_ANON_KEY no .env\n');
+    return;
   }
 
+  console.log('✅ Variáveis de configuração validadas');
+  console.log(`   SMTP: ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}`);
+  console.log(`   Alerta para: ${process.env.ALERT_EMAIL}\n`);
+
+  // Função wrapper para tratamento de erros
+  const safeCheckLateReturns = async (jobName) => {
+    try {
+      console.log(`\n🔔 [${jobName}] Iniciando...`);
+      await checkLateReturns();
+      schedulerState.lastRun = new Date();
+      schedulerState.errorCount = 0; // Reset error count on success
+    } catch (err) {
+      schedulerState.errorCount++;
+      console.error(`❌ Erro em ${jobName}:`, err.message);
+      if (schedulerState.errorCount >= 5) {
+        console.error(`⚠️  Múltiplas falhas detectadas (${schedulerState.errorCount}x). Verifique a configuração!`);
+      }
+    }
+  };
+
   // Job 1: Executar exatamente às 12:30 (após matutino)
-  // Minuto 30, hora 12, todos os dias
   const job1 = cron.schedule('30 12 * * *', () => {
-    console.log('\n🔔 [Agendado] Executando verificação do turno MATUTINO (12:30)');
-    checkLateReturns().catch(err => console.error('❌ Erro em job1:', err));
+    safeCheckLateReturns('Turno MATUTINO (12:30)').catch(() => {});
   }, {
     timezone: 'America/Sao_Paulo'
   });
 
   // Job 2: Executar exatamente às 18:30 (após vespertino)
-  // Minuto 30, hora 18, todos os dias
   const job2 = cron.schedule('30 18 * * *', () => {
-    console.log('\n🔔 [Agendado] Executando verificação do turno VESPERTINO (18:30)');
-    checkLateReturns().catch(err => console.error('❌ Erro em job2:', err));
+    safeCheckLateReturns('Turno VESPERTINO (18:30)').catch(() => {});
   }, {
     timezone: 'America/Sao_Paulo'
   });
 
   // Job 3: Executar exatamente às 22:35 (após noturno)
-  // Minuto 35, hora 22, todos os dias
   const job3 = cron.schedule('35 22 * * *', () => {
-    console.log('\n🔔 [Agendado] Executando verificação do turno NOTURNO (22:35)');
-    checkLateReturns().catch(err => console.error('❌ Erro em job3:', err));
+    safeCheckLateReturns('Turno NOTURNO (22:35)').catch(() => {});
   }, {
     timezone: 'America/Sao_Paulo'
   });
 
-  // Job 4: Failsafe - executar a cada 15 minutos
-  // Para garantir que nenhum alerta é perdido mesmo se o servidor reiniciar
-  // Minutos: 0, 15, 30, 45
+  // Job 4: Failsafe - executar a cada 15 minutos (sem logs silenciosos)
   const job4 = cron.schedule('*/15 * * * *', () => {
-    // Silencioso durante execução - apenas logs importantes do checkLateReturns
-    checkLateReturns().catch(err => console.error('❌ Erro em job4 (failsafe):', err));
+    safeCheckLateReturns('Failsafe (15 min)').catch(() => {});
   }, {
     timezone: 'America/Sao_Paulo'
   });
+
+  // Armazenar jobs no estado
+  schedulerState.jobs = [job1, job2, job3, job4];
+  schedulerState.initialized = true;
 
   console.log('\n📅 Agendamentos configurados:');
-  console.log('   ✓ 12:30 - Verificação após turno MATUTINO');
-  console.log('   ✓ 18:30 - Verificação após turno VESPERTINO');
-  console.log('   ✓ 22:35 - Verificação após turno NOTURNO');
+  console.log('   ✓ 12:30 (BR) - Verificação após turno MATUTINO');
+  console.log('   ✓ 18:30 (BR) - Verificação após turno VESPERTINO');
+  console.log('   ✓ 22:35 (BR) - Verificação após turno NOTURNO');
   console.log('   ✓ A cada 15 min - Failsafe/redundância');
-  console.log('='.repeat(70) + '\n');
+  console.log('='.repeat(70));
 
   // Executar uma vez ao inicializar (para pegar alertas pendentes)
-  console.log('⏳ Executando verificação inicial...\n');
-  checkLateReturns().catch(err => console.error('❌ Erro na verificação inicial:', err));
+  console.log('\n⏳ Executando verificação inicial...\n');
+  safeCheckLateReturns('Verificação Inicial').catch(() => {});
 
   return { job1, job2, job3, job4 };
 }
 
+// Exportar funções
 module.exports = {
-  initializeScheduler
+  initializeScheduler,
+  getSchedulerState: () => schedulerState
 };

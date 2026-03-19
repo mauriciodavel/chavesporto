@@ -98,19 +98,31 @@ process.on('uncaughtException', (error) => {
 // ========== INICIAR SERVIDOR ==========
 // Com jobs em horários específicos: 12:30, 18:30, 22:35 (30 min após fim de cada turno)
 // E failsafe a cada 15 minutos
-if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.ALERT_EMAIL) {
+console.log('\n📧 Verificando configuração de email...');
+const emailConfigured = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.ALERT_EMAIL;
+
+if (emailConfigured) {
+  console.log('✅ Email configurado! Inicializando agendador de notificações...');
   try {
-    console.log('📧 Serviço de email detectado - inicializando agendador de notificações');
+    const { getSchedulerState } = require('./jobs/scheduleNotifications');
     initializeScheduler();
+    const state = getSchedulerState();
+    console.log(`✅ Agendador inicializado com sucesso (${state.jobs.length} jobs)`);
   } catch (err) {
     console.error('❌ Erro ao inicializar agendador de notificações:', err.message);
-    console.error('   Notificações de email permanecerão desativadas');
+    console.error('   Verifique o arquivo .env e tente reiniciar o servidor');
   }
 } else {
-  console.warn('\n⚠️  AVISO: Email não configurado!');
+  const missing = [];
+  if (!process.env.SMTP_HOST) missing.push('SMTP_HOST');
+  if (!process.env.SMTP_USER) missing.push('SMTP_USER');
+  if (!process.env.ALERT_EMAIL) missing.push('ALERT_EMAIL');
+  
+  console.warn('\n⚠️  AVISO: Email não totalmente configurado!');
+  console.warn(`   Variáveis faltando: ${missing.join(', ')}`);
   console.warn('   Para ativar notificações de chaves não devolvidas, configure:');
   console.warn('   - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ALERT_EMAIL');
-  console.warn('   Veja o arquivo .env.example para mais detalhes\n');
+  console.warn('   - Veja o arquivo .env.example para mais detalhes\n');
 }
 
 // Exportar para Vercel
