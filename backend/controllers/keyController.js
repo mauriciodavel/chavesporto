@@ -327,8 +327,8 @@ exports.getKeyByQRCode = async (req, res) => {
 
       // Se há histórico, pega o primeiro
       if (!historyError && history && history.length > 0) {
-        lainstructor_id: history[0].instructor_id,
-          stActivity = {
+        lastActivity = {
+          instructor_id: history[0].instructor_id,
           instructor: history[0].instructors?.name,
           withdrawnAt: normalizeSupabaseDate(history[0].withdrawn_at)
         };
