@@ -41,7 +41,7 @@ const fetchAllKeys = async (res) => {
     // Enriquecer cada chave com informações da última atividade
     const keysWithActivity = await Promise.all(keys.map(async (key) => {
       try {
-        const { data: history, error: historyError } = await supabase
+        const { data: history, error: historyError } = await supabase.admin
           .from('key_history')
           .select('*, instructors(name)')
           .eq('key_id', key.id)
@@ -162,7 +162,7 @@ const fetchAvailableKeysForUser = async (res, instructorId) => {
     // Enriquecer cada chave com informações da última atividade
     const keysWithActivity = await Promise.all(keysToDisplay.map(async (key) => {
       try {
-        const { data: history, error: historyError } = await supabase
+        const { data: history, error: historyError } = await supabase.admin
           .from('key_history')
           .select('*, instructors(name)')
           .eq('key_id', key.id)
@@ -223,7 +223,7 @@ exports.getAllKeysUnfiltered = async (req, res) => {
     // Enriquecer cada chave com informações da última atividade
     const keysWithActivity = await Promise.all(keys.map(async (key) => {
       try {
-        const { data: history, error: historyError } = await supabase
+        const { data: history, error: historyError } = await supabase.admin
           .from('key_history')
           .select('*, instructors(name)')
           .eq('key_id', key.id)
@@ -314,7 +314,7 @@ exports.getKeyByQRCode = async (req, res) => {
     // Buscar última atividade se chave estiver em uso
     let lastActivity = null;
     if (key.status === 'in_use') {
-      const { data: history, error: historyError } = await supabase
+      const { data: history, error: historyError } = await supabase.admin
         .from('key_history')
         .select('*, instructors(name)')
         .eq('key_id', key.id)
@@ -546,7 +546,9 @@ exports.returnKey = async (req, res) => {
     const userRole = req.user.role;
 
     // Buscar registro ativo de retirada
-    const { data: history } = await supabase
+    // Usar supabase.admin para bypassar RLS (auth.uid() não funciona com JWT customizado)
+    // Backend valida autorização na linha 566
+    const { data: history } = await supabase.admin
       .from('key_history')
       .select('*')
       .eq('key_id', id)
