@@ -406,7 +406,7 @@ exports.updateKey = async (req, res) => {
     const { id } = req.params;
     const { environment, description, location, technicalArea, status } = req.body;
 
-    const { data: key, error } = await supabase
+    const { data: key, error } = await supabase.admin
       .from('keys')
       .update({
         environment: environment || undefined,
@@ -441,7 +441,7 @@ exports.deleteKey = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { error } = await supabase
+    const { error } = await supabase.admin
       .from('keys')
       .delete()
       .eq('id', id);
@@ -503,8 +503,8 @@ exports.withdrawKey = async (req, res) => {
       }
     }
 
-    // Atualizar status da chave
-    await supabase
+    // Atualizar status da chave (usar admin para bypass de RLS/policies)
+    await supabase.admin
       .from('keys')
       .update({ status: 'in_use', updated_at: new Date().toISOString() })
       .eq('id', id);
@@ -606,8 +606,8 @@ exports.returnKey = async (req, res) => {
       observation: observation ? '(preenchida)' : '(vazia)'
     });
 
-    // Atualizar registro no banco
-    const { error: updateError } = await supabase
+    // Atualizar registro no banco (usar admin para bypass de RLS/policies)
+    const { error: updateError } = await supabase.admin
       .from('key_history')
       .update(updateData)
       .eq('id', history.id);
@@ -619,8 +619,8 @@ exports.returnKey = async (req, res) => {
 
     console.log('✅ Histórico atualizado com sucesso');
 
-    // Atualizar status da chave
-    const { error: keyError } = await supabase
+    // Atualizar status da chave (usar admin para bypass de RLS/policies)
+    const { error: keyError } = await supabase.admin
       .from('keys')
       .update({ status: 'available', updated_at: returnedAt })
       .eq('id', id);
