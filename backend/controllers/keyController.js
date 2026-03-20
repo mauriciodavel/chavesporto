@@ -55,6 +55,7 @@ const fetchAllKeys = async (res) => {
           ...key,
           lastActivity: activeHistory ? {
             instructor: activeHistory.instructors?.name,
+            instructor_id: activeHistory.instructor_id,
             withdrawnAt: normalizeSupabaseDate(activeHistory.withdrawn_at)
           } : null
         };
@@ -176,6 +177,7 @@ const fetchAvailableKeysForUser = async (res, instructorId) => {
           ...key,
           lastActivity: activeHistory ? {
             instructor: activeHistory.instructors?.name,
+            instructor_id: activeHistory.instructor_id,
             withdrawnAt: normalizeSupabaseDate(activeHistory.withdrawn_at)
           } : null
         };
@@ -236,6 +238,7 @@ exports.getAllKeysUnfiltered = async (req, res) => {
         return {
           ...key,
           lastActivity: activeHistory ? {
+            instructor_id: activeHistory.instructor_id,
             instructor: activeHistory.instructors?.name,
             withdrawnAt: normalizeSupabaseDate(activeHistory.withdrawn_at)
           } : null
@@ -324,7 +327,8 @@ exports.getKeyByQRCode = async (req, res) => {
 
       // Se há histórico, pega o primeiro
       if (!historyError && history && history.length > 0) {
-        lastActivity = {
+        lainstructor_id: history[0].instructor_id,
+          stActivity = {
           instructor: history[0].instructors?.name,
           withdrawnAt: normalizeSupabaseDate(history[0].withdrawn_at)
         };

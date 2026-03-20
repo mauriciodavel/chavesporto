@@ -227,8 +227,8 @@ function displayKeys() {
               ${key.status === 'available' ? 'Disponível' : 'Em uso'}
             </span>
           </div>
-          <button class="key-card-button" ${key.status !== 'available' ? 'disabled' : ''}>
-            ${key.status === 'available' ? 'Retirar' : 'Indisponível'}
+          <button class="key-card-button" ${key.status !== 'available' && key.lastActivity?.instructor_id !== userData?.id ? 'disabled' : ''}>
+            ${key.status === 'available' ? 'Retirar' : (key.lastActivity?.instructor_id === userData?.id ? 'Devolver' : 'Indisponível')}
           </button>
         </div>
       </div>
@@ -257,15 +257,18 @@ function selectKey(keyId, environment) {
 
   // ========== NOVA LÓGICA: Verificar se é chave indisponível com lastActivity ==========
   // Se a chave está com status 'in_use' e tem lastActivity (outro instrutor tem a chave)
-  if (key.status === 'in_use' && key.lastActivity && currentKeyFilter === 'available') {
-    // Mostrar modal de chave indisponível
+  // MAS: Se FOI EU que retirei, permite devolver independente do filtro
+  const isMyWithdrawal = key.lastActivity?.instructor_id === userData?.id;
+  
+  if (key.status === 'in_use' && key.lastActivity && currentKeyFilter === 'available' && !isMyWithdrawal) {
+    // Mostrar modal de chave indisponível (é de outro instrutor)
     showUnavailableKeyModal(key, environment);
     return;
   }
 
   // Determinar ação baseado no filtro atual e status da chave
-  if (currentKeyFilter === 'late') {
-    // Se está em atraso, mostrar opção de devolver
+  if (currentKeyFilter === 'late' || (isMyWithdrawal && key.status === 'in_use')) {
+    // Se está em atraso OU é minha chave em uso, mostrar opção de devolver
     currentModal.action = 'return';
     document.getElementById('qrModalTitle').textContent = `Devolver Chave - ${environment}`;
     document.getElementById('qrModalSubtitle').textContent = `Escaneie o QR-Code para confirmar a devolução`;
