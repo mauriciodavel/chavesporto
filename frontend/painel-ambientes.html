@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Ambientes - SENAI</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/painel-ambientes.css">
+</head>
+<body>
+  <div class="painel-container">
+    <!-- HEADER -->
+    <header class="painel-header">
+      <div class="header-left">
+        <h1 class="header-title">
+          <span class="title-icon">🏫</span>
+          Painel de Ambientes
+        </h1>
+        <p class="header-subtitle">Acompanhe os horários de aulas e disponibilidade dos ambientes</p>
+      </div>
+      <div class="header-right">
+        <div class="current-time" id="currentTime">--:--:--</div>
+        <div class="current-date" id="currentDate">--/--/----</div>
+        <div class="active-turn-indicator" id="activeTurnIndicator"></div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <div class="painel-main">
+      <!-- LEFT: TABLE SECTION -->
+      <div class="table-section">
+        <!-- CONTROLS -->
+        <div class="painel-controls">
+          <div class="controls-left">
+            <div class="search-box">
+              <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Buscar por ambiente, instrutor ou turma..."
+                class="search-input"
+              >
+              <span class="search-icon">🔍</span>
+            </div>
+          </div>
+
+          <div class="controls-right">
+            <div class="sort-group">
+              <label for="sortSelect">Ordenar por:</label>
+              <select id="sortSelect" class="sort-select">
+                <option value="turma">Código da Turma</option>
+                <option value="instructor">Nome do Instrutor</option>
+                <option value="environment">Unidade Curricular</option>
+                <option value="time">Horário</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-wrapper">
+          <table class="ambientes-table">
+            <thead>
+              <tr>
+                <th>Status Chave</th>
+                <th>Código da Turma</th>
+                <th>Nome do Instrutor</th>
+                <th>Ambiente</th>
+                <th>Capacidade</th>
+                <th>Horário</th>
+                <th>Turno</th>
+              </tr>
+            </thead>
+            <tbody id="ambientesTableBody">
+              <tr class="loading-row">
+                <td colspan="7" style="text-align: center; padding: 2rem;">
+                  <div class="spinner"></div>
+                  <p>Carregando dados...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- NO DATA MESSAGE -->
+        <div id="noDataMessage" class="no-data-message" style="display: none;">
+          <p>📭 Nenhum ambiente com reserva ativa no momento.</p>
+        </div>
+      </div>
+
+      <!-- RIGHT: MEDIA SIDEBAR -->
+      <aside class="media-sidebar" id="mediaSidebar">
+        <div class="media-header">
+          <h3>📺 Mídia & Comunicação</h3>
+          <div class="admin-mode-indicator" id="adminModeIndicator" style="display: none;">
+            <span class="admin-badge">👤 Admin</span>
+          </div>
+        </div>
+
+        <!-- MEDIA CONTAINER -->
+        <div id="mediaInfo" class="media-grid">
+          <!-- IMAGE 1 -->
+          <div class="media-item image-item" id="mediaItem1">
+            <div class="media-placeholder" id="mediaPlaceholder1">
+              <div class="placeholder-icon">🖼️</div>
+              <p>Imagem 1</p>
+              <p class="placeholder-size">(Max: 5MB)</p>
+            </div>
+            <img id="mediaImage1" class="media-display" style="display: none;" alt="Imagem 1">
+            <div class="media-controls" id="mediaControls1" style="display: none;">
+              <button class="btn-remove" onclick="removeMedia(1)">🗑️ Remover</button>
+            </div>
+          </div>
+
+          <!-- IMAGE 2 -->
+          <div class="media-item image-item" id="mediaItem2">
+            <div class="media-placeholder" id="mediaPlaceholder2">
+              <div class="placeholder-icon">🖼️</div>
+              <p>Imagem 2</p>
+              <p class="placeholder-size">(Max: 5MB)</p>
+            </div>
+            <img id="mediaImage2" class="media-display" style="display: none;" alt="Imagem 2">
+            <div class="media-controls" id="mediaControls2" style="display: none;">
+              <button class="btn-remove" onclick="removeMedia(2)">🗑️ Remover</button>
+            </div>
+          </div>
+
+          <!-- VIDEO -->
+          <div class="media-item video-item" id="mediaItem3">
+            <div class="media-placeholder" id="mediaPlaceholder3">
+              <div class="placeholder-icon">🎥</div>
+              <p>Vídeo</p>
+              <p class="placeholder-size">(Max: 50MB)</p>
+            </div>
+            <video id="mediaVideo3" class="media-display" style="display: none;" controls autoplay muted loop></video>
+            <div class="media-controls" id="mediaControls3" style="display: none;">
+              <button class="btn-remove" onclick="removeMedia(3)">🗑️ Remover</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOGIN BUTTON (VISIBLE WHEN NOT ADMIN) -->
+        <button id="adminLoginBtnSidebar" class="btn btn-primary" style="display: block; width: 100%; margin-top: 1rem;" onclick="openModal('adminLoginModal')">
+          🔐 Fazer Login (Admin)
+        </button>
+
+        <!-- UPDATE MEDIA BUTTON (ADMIN ONLY) -->
+        <button id="updateMediaBtn" class="btn btn-primary" style="display: none; width: 100%; margin-top: 1rem;" onclick="openUpdateMediaModal()">
+          🔄 Atualizar Mídia
+        </button>
+
+        <!-- INFO SECTION (ADMIN ONLY) -->
+        <div class="media-info" id="mediaInfoSection" style="display: none;">
+          <h4>ℹ️ Informações</h4>
+          <ul>
+            <li>✓ Imagens: JPG, PNG, GIF (Max 5MB)</li>
+            <li>✓ Vídeo: MP4, WebM (Max 50MB)</li>
+            <li>✓ Novo arquivo sobrescreve anterior</li>
+            <li>✓ Acesso público ao painel</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- MEDIA UPDATE MODAL -->
+  <div id="updateMediaModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📤 Atualizar Mídia</h2>
+        <button class="modal-close" onclick="closeUpdateMediaModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="upload-tabs">
+          <button class="tab-btn active" onclick="switchUploadTab(1)">Imagem 1</button>
+          <button class="tab-btn" onclick="switchUploadTab(2)">Imagem 2</button>
+          <button class="tab-btn" onclick="switchUploadTab(3)">Vídeo</button>
+        </div>
+
+        <div class="upload-input-group">
+          <input 
+            type="file" 
+            id="mediaUploadInput" 
+            class="file-input"
+            accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm"
+          >
+          <button id="uploadBtn" class="btn btn-primary" onclick="uploadMedia()">
+            📤 Enviar
+          </button>
+        </div>
+
+        <div class="upload-status" id="uploadStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN LOGIN MODAL -->
+  <div class="modal" id="adminLoginModal">
+    <div class="modal-content modal-compact">
+      <div class="modal-header">
+        <h2>🔐 Acesso Admin</h2>
+        <button class="modal-close" onclick="closeModal('adminLoginModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+          <div class="form-group">
+            <label for="adminEmail">Matrícula:</label>
+            <input type="text" id="adminEmail" required placeholder="Ex: ADM001">
+          </div>
+          <div class="form-group">
+            <label for="adminPassword">Senha:</label>
+            <input type="password" id="adminPassword" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">Entrar</button>
+        </form>
+        <p class="modal-footer-text">Apenas administradores podem fazer upload de mídia</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS ROW DETAILS MODAL -->
+  <div class="modal" id="detailsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="detailsTitle">Detalhes do Ambiente</h2>
+        <button class="modal-close" onclick="closeModal('detailsModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="detailsModalBody">
+        <!-- Details will be populated here -->
+      </div>
+    </div>
+  </div>
+
+  <script src="js/painel-ambientes.js"></script>
+</body>
+</html>

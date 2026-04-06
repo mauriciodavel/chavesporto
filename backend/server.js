@@ -13,6 +13,9 @@ app.use(express.urlencoded({ extended: true }));
 // Servir arquivos estáticos do frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
 
+// Servir arquivos estáticos de mídia
+app.use('/media', express.static(path.join(__dirname, '../public/media')));
+
 // Importar rotas
 const authRoutes = require('./routes/auth');
 const keyRoutes = require('./routes/keys');
@@ -23,6 +26,7 @@ const testRoutes = require('./routes/test');
 const setupRoutes = require('./routes/setup');
 const reservationRoutes = require('./routes/reservationRoutes');
 const blockoutRoutes = require('./routes/blockouts');
+const painelRoutes = require('./routes/painel');
 
 // Importar schedulers
 const { initializeScheduler } = require('./jobs/scheduleNotifications');
@@ -37,6 +41,12 @@ app.use('/api/test', testRoutes);
 app.use('/api/setup', setupRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/blockouts', blockoutRoutes);
+app.use('/api/painel', painelRoutes);
+
+// Rota para painel de ambientes (público)
+app.get('/painel', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/painel-ambientes.html'));
+});
 
 // Rota raiz - servir login.html
 app.get('/', (req, res) => {

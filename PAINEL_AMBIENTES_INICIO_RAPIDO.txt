@@ -1,0 +1,87 @@
+# 🚀 Início Rápido - Painel de Ambientes
+
+## ⚡ 5 Minutos para Começar
+
+### 1️⃣ Instalar Multer
+```bash
+cd backend
+npm install
+```
+
+### 2️⃣ Iniciar Servidor
+```bash
+npm run dev
+```
+
+### 3️⃣ Acessar Painel
+```
+http://localhost:3000/painel
+```
+
+✅ **Pronto!** O painel já está funcionando.
+
+---
+
+## 📋 Próximas Ações
+
+### A. Criar Dados de Teste
+```bash
+# 1. Acesse o admin
+http://localhost:3000/admin
+
+# 2. Crie uma chave
+- Nome: Lab 201
+- Localização: Bloco A
+
+# 3. Crie um instrutor
+- Nome: Seu Nome
+- Email: seu@email.com
+
+# 4. Crie uma reserva APROVADA
+- Data: Hoje
+- Shift: Matutino
+```
+
+### B. Testar Painel Público
+```bash
+# Abra em novo aba
+http://localhost:3000/painel
+
+# Veja a tabela com sua reserva
+```
+
+### C. Adicionar Mídia (Admin)
+```bash
+# No painel, clica:
+🔐 Admin
+
+# Login com credenciais de admin
+
+# Upload de imagem ou vídeo
+```
+
+---
+
+## 🎯 Checklist Rápido
+
+- [ ] Backend iniciado (`npm run dev`)
+- [ ] Painel acessível (`/painel`)
+- [ ] Reserva criada e aprovada
+- [ ] Tabela mostra dados
+- [ ] Admin login funciona
+- [ ] Upload de mídia funciona
+
+---
+
+## 📞 Problemas Comuns
+
+| Problema | Solução |
+|----------|---------|
+| Painel vazio | Crie reserva aprovada para hoje |
+| Multer error | `npm install multer` |
+| CSS ruim | Limpe cache (Ctrl+Shift+Del) |
+| Admin login falha | Confirme role = 'admin' |
+
+---
+
+**Status**: ✅ Pronto para Usar
