@@ -11,7 +11,6 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 const BUCKET_NAME = process.env.SUPABASE_BUCKET || 'painel-media';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 
 // ============================================
 // GET AMBIENTES COM RESERVAS ATIVAS
