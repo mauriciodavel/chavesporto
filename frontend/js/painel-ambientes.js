@@ -559,81 +559,81 @@ async function uploadMedia() {
   try {
     showUploadStatus('🔄 Enviando arquivo...', 'info');
 
-    // NOVA ESTRATÉGIA: fazer upload direto ao Supabase bypass Vercel
+    // NOVA ESTRATÉGIA: usar Supabase SDK para upload direto ao Storage
     console.log('📤 Iniciando upload direto ao Supabase (bypass do Vercel)');
     console.log('   Arquivo:', file.name, '|', file.type, '|', file.size, 'bytes');
     console.log('   Tipo de mídia:', currentUploadType);
 
-    // Configurar Supabase client via fetch
+    // Inicializar cliente Supabase
     const SUPABASE_URL = 'https://gxkmcqcgorkscabzuhks.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_NoPNne9CTg0PAHoAwGq_Rw_Ems6S31r';
     const BUCKET_NAME = 'painel-media';
+
+    const { createClient } = window.supabase;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // Preparar nome do arquivo
     const filename = `media_${currentUploadType}_${Date.now()}${getFileExtension(file.name)}`;
     const uploadPath = `painel/${filename}`;
 
-    console.log('   URL Supabase:', SUPABASE_URL);
     console.log('   Bucket:', BUCKET_NAME);
     console.log('   Path:', uploadPath);
 
     // Limpar arquivos antigos do mesmo tipo
     console.log('🗑️ Limpando arquivos antigos de tipo', currentUploadType);
     try {
-      // Listar arquivos antigos
-      const listUrl = `${SUPABASE_URL}/storage/v1/object/list/${BUCKET_NAME}/painel?search=media_${currentUploadType}_`;
-      const listResponse = await fetch(listUrl, {
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      });
-      
-      if (listResponse.ok) {
-        const listData = await listResponse.json();
-        console.log('   Encontrados:', listData.length, 'arquivo(s) antigo(s)');
+      // Listar arquivos antigos usando SDK
+      const { data: oldFiles, error: listError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .list('painel', {
+          search: `media_${currentUploadType}_`,
+          limit: 100
+        });
+
+      if (!listError && oldFiles && oldFiles.length > 0) {
+        console.log('   Encontrados:', oldFiles.length, 'arquivo(s) antigo(s)');
         
         // Deletar cada arquivo antigo
-        for (const oldFile of listData) {
-          const deleteUrl = `${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/painel/${oldFile.name}`;
-          await fetch(deleteUrl, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-          });
-          console.log('   ✓ Removido:', oldFile.name);
+        for (const oldFile of oldFiles) {
+          const { error: deleteError } = await supabase.storage
+            .from(BUCKET_NAME)
+            .remove([`painel/${oldFile.name}`]);
+          
+          if (!deleteError) {
+            console.log('   ✓ Removido:', oldFile.name);
+          }
         }
+      } else {
+        console.log('   ✓ Nenhum arquivo antigo para remover');
       }
     } catch (cleanError) {
       console.warn('⚠️ Erro ao limpar antigos (não crítico):', cleanError.message);
     }
 
-    // Fazer upload direto via API REST do Supabase
-    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${uploadPath}`;
+    // Fazer upload usando SDK Supabase (muito mais seguro e confiável)
+    console.log('📤 Enviando arquivo para Supabase...');
     
-    console.log('📤 Enviando para Supabase:', uploadUrl);
-    
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': file.type
-      },
-      body: file
-    });
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(uploadPath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
-    console.log('📬 Resposta do Supabase - Status:', uploadResponse.status, uploadResponse.statusText);
-
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
-      console.error('❌ Erro no upload:', uploadResponse.status);
-      console.error('   Detalhes:', errorText.substring(0, 300));
-      showUploadStatus(`❌ Erro ao enviar (HTTP ${uploadResponse.status})`, 'error');
+    if (error) {
+      console.error('❌ Erro no upload:', error);
+      showUploadStatus(`❌ Erro ao fazer upload: ${error.message}`, 'error');
       return;
     }
 
+    console.log('✅ Upload bem-sucedido!', data);
+
     // Gerar URL pública
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${uploadPath}`;
+    const { data: publicData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(uploadPath);
+
+    const publicUrl = publicData.publicUrl;
     console.log('🔗 URL pública:', publicUrl);
 
     // Criar objeto de mídia
