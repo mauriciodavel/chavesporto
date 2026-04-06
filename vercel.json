@@ -15,22 +15,5 @@
   "env": {
     "NODE_ENV": "production",
     "PORT": "3000"
-  },
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 60,
-      "memory": 3008
-    }
-  },
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Content-Length",
-          "value": "104857600"
-        }
-      ]
-    }
-  ]
+  }
 }
