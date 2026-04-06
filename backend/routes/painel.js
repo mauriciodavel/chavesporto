@@ -74,17 +74,19 @@ router.post('/debug/upload-test', async (req, res) => {
       process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_KEY
     );
 
-    // Criar arquivo PDF de teste bem pequeno
-    const testContent = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]>>endobj xref 0 4 0000000000 65535 f 0000000009 00000 n 0000000058 00000 n 0000000115 00000 n trailer<</Size 4/Root 1 0 R>>startxref 190 %%EOF');
+    // Criar arquivo PNG de teste bem pequeno (1x1)
+    const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const testContent = Buffer.from(pngBase64, 'base64');
     
-    const filename = `debug_test_${Date.now()}.pdf`;
+    const filename = `debug_test_${Date.now()}.png`;
     console.log(`   Arquivo: ${filename}`);
     console.log(`   Tamanho: ${testContent.length} bytes`);
+    console.log(`   MIME: image/png`);
 
     const { data, error } = await supabase.storage
       .from(process.env.SUPABASE_BUCKET || 'painel-media')
       .upload(`painel/${filename}`, testContent, {
-        contentType: 'application/pdf',
+        contentType: 'image/png',
         upsert: false
       });
 
@@ -97,13 +99,14 @@ router.post('/debug/upload-test', async (req, res) => {
           message: error.message,
           code: error.code,
           status: error.status,
-          fullError: JSON.stringify(error)
+          namespace: error.namespace
         },
         debug_info: {
           bucket: process.env.SUPABASE_BUCKET,
           url: process.env.SUPABASE_URL,
           has_key: !!process.env.SUPABASE_KEY,
-          has_service_role: !!process.env.SUPABASE_SERVICE_ROLE
+          has_service_role: !!process.env.SUPABASE_SERVICE_ROLE,
+          allowed_types: ['image/jpeg', 'image/jpg', 'image/png', 'video/mp4']
         }
       });
     }
@@ -129,7 +132,8 @@ router.post('/debug/upload-test', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erro ao executar teste',
-      error: error.message
+      error: error.message,
+      stack: error.stack
     });
   }
 });
