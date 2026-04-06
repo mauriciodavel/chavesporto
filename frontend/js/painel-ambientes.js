@@ -829,4 +829,4 @@ setInterval(() => {
   loadAmbientes();
 }, 60000); // A cada 1 minuto
 
-console.log('✅ Painel de Ambientes carregado');
+console.log('✅ Painel de Ambientes carregado - v2 com upload direto Supabase');
