@@ -571,6 +571,9 @@ async function uploadMedia() {
     console.log('📝 Passo 1: Preparando upload no servidor...');
     const filename = `media_${currentUploadType}_${Date.now()}${getFileExtension(file.name)}`;
     
+    console.log('   Enviando para /media/prepare-upload');
+    console.log('   Body:', { type: currentUploadType, filename: filename, filesize: file.size });
+    
     const prepareResponse = await fetch(`${API_BASE}/painel/media/prepare-upload`, {
       method: 'POST',
       headers: {
@@ -584,24 +587,39 @@ async function uploadMedia() {
       })
     });
 
+    console.log('   ✅ Resposta de prepare-upload recebida');
+    console.log('   Status:', prepareResponse.status, prepareResponse.statusText);
+
     if (!prepareResponse.ok) {
       const errorText = await prepareResponse.text();
-      console.error('❌ Erro ao preparar upload:', prepareResponse.status, errorText);
-      showUploadStatus(`❌ Erro ao preparar upload (${prepareResponse.status})`, 'error');
+      console.error('❌❌❌ ERRO NA FASE 1 (Prepare):', prepareResponse.status);
+      console.error('   Erro:', errorText.substring(0, 300));
+      showUploadStatus(`❌ Erro ao preparar upload (HTTP ${prepareResponse.status})`, 'error');
       return;
     }
 
-    const prepareData = await prepareResponse.json();
-    console.log('✅ Upload preparado:', prepareData);
+    let prepareData;
+    try {
+      prepareData = await prepareResponse.json();
+    } catch (parseError) {
+      console.error('❌ Erro ao fazer parse de JSON:', parseError.message);
+      showUploadStatus('❌ Erro ao processar resposta do servidor', 'error');
+      return;
+    }
+
+    console.log('✅ Prepare data recebido:', prepareData);
 
     if (!prepareData.success) {
+      console.error('❌ Prepare não foi bem-sucedido:', prepareData.message);
       showUploadStatus(`❌ ${prepareData.message}`, 'error');
       return;
     }
 
     // Passo 2: Fazer upload direto para Supabase (sem passar pelo backend)
-    console.log('📤 Passo 2: Fazendo upload direto para Supabase...');
+    console.log('\n📤 Passo 2: Fazendo upload direto para Supabase...');
     console.log('   URL:', prepareData.uploadUrl);
+    console.log('   Tamanho do arquivo:', file.size, 'bytes');
+    console.log('   Tipo de arquivo:', file.type);
 
     const uploadResponse = await fetch(prepareData.uploadUrl, {
       method: 'POST',
@@ -612,18 +630,21 @@ async function uploadMedia() {
       body: file
     });
 
-    console.log('📬 Resposta do Supabase - Status:', uploadResponse.status);
+    console.log('   ✅ Resposta do upload Supabase recebida');
+    console.log('   Status:', uploadResponse.status, uploadResponse.statusText);
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
-      console.error('❌ Erro no upload direto:', uploadResponse.status, errorText.substring(0, 200));
-      showUploadStatus(`❌ Erro ao fazer upload (${uploadResponse.status})`, 'error');
+      console.error('❌❌❌ ERRO NA FASE 2 (Upload Supabase):', uploadResponse.status);
+      console.error('   Erro:', errorText.substring(0, 300));
+      showUploadStatus(`❌ Erro ao fazer upload para Supabase (HTTP ${uploadResponse.status})`, 'error');
       return;
     }
 
     // Passo 3: Gerar URL pública
-    console.log('🔗 Passo 3: Gerando URL pública...');
+    console.log('\n🔗 Passo 3: Gerando URL pública...');
     const publicUrl = `${process.env.SUPABASE_URL || 'https://gxkmcqcgorkscabzuhks.supabase.co'}/storage/v1/object/public/${prepareData.bucket}/${prepareData.uploadPath}`;
+    console.log('   URL pública:', publicUrl);
 
     // Criar objeto de mídia
     const media = {
@@ -641,6 +662,7 @@ async function uploadMedia() {
 
     showUploadStatus('✅ Arquivo enviado com sucesso!', 'success');
     input.value = '';
+    console.log('✅✅✅ UPLOAD COMPLETO!');
     console.log('📤 Mídia enviada:', media);
   } catch (error) {
     console.error('❌ Erro ao enviar arquivo:', error);
