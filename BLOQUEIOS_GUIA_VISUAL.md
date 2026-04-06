@@ -7,8 +7,8 @@ http://localhost:3000/admin-blockouts
 
 ---
 
-## 📐 Estrutura da Página
-
+## 📐 Estrutura da Página   
+ 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  ← Voltar ao Admin                                              │
