@@ -563,6 +563,10 @@ async function uploadMedia() {
     formData.append('file', file);
     formData.append('type', currentUploadType);
 
+    console.log('📤 Enviando para:', `${API_BASE}/painel/media/upload`);
+    console.log('   Arquivo:', file.name, '|', file.type, '|', file.size, 'bytes');
+    console.log('   Tipo de mídia:', currentUploadType);
+
     const response = await fetch(`${API_BASE}/painel/media/upload`, {
       method: 'POST',
       headers: {
@@ -571,7 +575,22 @@ async function uploadMedia() {
       body: formData
     });
 
-    const data = await response.json();
+    console.log('📬 Resposta recebida - Status:', response.status, response.statusText);
+
+    // Primeiro tenta ler a resposta como texto para debug
+    const responseText = await response.text();
+    console.log('📄 Response text:', responseText.substring(0, 500));
+
+    // Depois tenta fazer parse de JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ Erro ao fazer parse de JSON:', parseError.message);
+      console.error('   Response recebida:', responseText);
+      showUploadStatus(`❌ Erro de servidor: Resposta inválida (${response.status})`, 'error');
+      return;
+    }
 
     if (data.success) {
       // Criar objeto de mídia
@@ -592,11 +611,13 @@ async function uploadMedia() {
       input.value = '';
       console.log('📤 Mídia enviada:', media);
     } else {
-      showUploadStatus(`❌ ${data.message || 'Erro ao enviar'}`, 'error');
+      console.error('❌ Erro de resposta:', data);
+      showUploadStatus(`❌ ${data.message || 'Erro ao enviar'} ${data.error ? '(' + data.error + ')' : ''}`, 'error');
     }
   } catch (error) {
     console.error('❌ Erro ao enviar arquivo:', error);
-    showUploadStatus('❌ Erro ao enviar arquivo', 'error');
+    console.error('   Stack:', error.stack);
+    showUploadStatus('❌ Erro ao enviar arquivo: ' + error.message, 'error');
   }
 }
 

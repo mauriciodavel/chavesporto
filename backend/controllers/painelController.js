@@ -139,6 +139,9 @@ function getHorariosPorTurno(shift) {
 exports.uploadMedia = async (req, res) => {
   try {
     console.log('📤 [MEDIA] Upload iniciado');
+    console.log('   User:', req.user);
+    console.log('   File:', req.file ? { name: req.file.originalname, size: req.file.size, mime: req.file.mimetype } : 'NENHUM');
+    console.log('   Body:', req.body);
 
     // Verificar autenticação admin
     if (!req.user || req.user.role !== 'admin') {
@@ -158,6 +161,7 @@ exports.uploadMedia = async (req, res) => {
     }
 
     const { type } = req.body; // 1, 2 (imagens) ou 3 (vídeo)
+    console.log('   Type recebido:', type, `(tipo: ${typeof type})`);
 
     if (!type || !['1', '2', '3'].includes(String(type))) {
       console.error('❌ Tipo de mídia inválido:', type);
@@ -171,6 +175,8 @@ exports.uploadMedia = async (req, res) => {
     const isVideo = type === '3';
     const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
     const fileType = isVideo ? 'vídeo' : 'imagem';
+    
+    console.log(`   Validação: type=${type}, isVideo=${isVideo}, mime=${req.file.mimetype}, size=${req.file.size}B, max=${maxSize}B`);
 
     if (!isVideo && !req.file.mimetype.startsWith('image/')) {
       console.error('❌ Arquivo não é imagem:', req.file.mimetype);
@@ -265,6 +271,15 @@ exports.uploadMedia = async (req, res) => {
         .from(BUCKET_NAME)
         .getPublicUrl(`painel/${filename}`);
 
+      if (!publicData || !publicData.publicUrl) {
+        console.error('❌ Erro ao gerar URL pública');
+        return res.status(500).json({
+          success: false,
+          message: 'Erro ao gerar URL pública',
+          details: { bucket: BUCKET_NAME, filename: filename }
+        });
+      }
+
       const url = publicData.publicUrl;
       console.log('✅ UPLOAD BEM-SUCEDIDO!');
       console.log(`   URL: ${url}`);
@@ -311,11 +326,18 @@ exports.uploadMedia = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('❌ Erro ao fazer upload:', error);
+    console.error('❌❌❌ ERRO CRÍTICO ao fazer upload:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return res.status(500).json({
       success: false,
       message: 'Erro ao enviar arquivo',
-      error: error.message
+      error: error.message,
+      errorType: error.name,
+      errorStack: process.env.NODE_ENV === 'production' ? undefined : error.stack.split('\n')
     });
   }
 };
