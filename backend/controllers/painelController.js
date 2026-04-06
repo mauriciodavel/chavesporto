@@ -473,4 +473,83 @@ exports.getMediaList = async (req, res) => {
   }
 };
 
+// ============================================
+// DEBUG: VERIFICAR VARIÁVEIS DE AMBIENTE
+// ============================================
+
+exports.debugStatus = async (req, res) => {
+  try {
+    const status = {
+      mode: IS_PRODUCTION ? '☁️ PRODUÇÃO' : '💾 DESENVOLVIMENTO',
+      environment_variables: {
+        NODE_ENV: {
+          set: !!process.env.NODE_ENV,
+          value: process.env.NODE_ENV || 'não configurado'
+        },
+        SUPABASE_URL: {
+          set: !!process.env.SUPABASE_URL,
+          preview: process.env.SUPABASE_URL ? `${process.env.SUPABASE_URL.slice(0, 20)}...` : 'não configurado'
+        },
+        SUPABASE_KEY: {
+          set: !!process.env.SUPABASE_KEY,
+          preview: process.env.SUPABASE_KEY ? `${process.env.SUPABASE_KEY.slice(0, 10)}...${process.env.SUPABASE_KEY.slice(-5)}` : 'não configurado'
+        },
+        SUPABASE_SERVICE_ROLE: {
+          set: !!process.env.SUPABASE_SERVICE_ROLE,
+          preview: process.env.SUPABASE_SERVICE_ROLE ? '*****(configurado)' : 'não configurado'
+        },
+        SUPABASE_BUCKET: {
+          set: !!process.env.SUPABASE_BUCKET,
+          value: process.env.SUPABASE_BUCKET || 'não configurado'
+        }
+      },
+      supabase_connection: {
+        url: process.env.SUPABASE_URL || 'não configurado',
+        can_connect: false,
+        bucket_exists: false,
+        bucket_is_public: false
+      }
+    };
+
+    // Tentar conectar ao Supabase
+    if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
+      try {
+        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+        
+        if (!bucketsError && buckets) {
+          status.supabase_connection.can_connect = true;
+          
+          const bucket = buckets.find(b => b.name === BUCKET_NAME);
+          status.supabase_connection.bucket_exists = !!bucket;
+          status.supabase_connection.bucket_is_public = bucket?.public || false;
+          status.supabase_connection.available_buckets = buckets.map(b => ({
+            name: b.name,
+            public: b.public
+          }));
+        } else {
+          status.supabase_connection.error = bucketsError?.message || 'Erro desconhecido';
+        }
+      } catch (error) {
+        status.supabase_connection.error = error.message;
+      }
+    }
+
+    console.log('🔍 DEBUG STATUS:', JSON.stringify(status, null, 2));
+
+    return res.status(200).json({
+      success: true,
+      message: 'Status de debug obtido com sucesso',
+      data: status,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Erro ao gerar status de debug:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Erro ao gerar status de debug',
+      error: error.message
+    });
+  }
+};
+
 module.exports = exports;

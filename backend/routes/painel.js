@@ -54,4 +54,11 @@ router.use((err, req, res, next) => {
 // DELETE /api/painel/media/:type - Deletar mídia
 router.delete('/media/:type', verifyToken, verifyAdmin, painelController.deleteMedia);
 
+// ============================================
+// DEBUG ENDPOINT
+// ============================================
+
+// GET /api/painel/debug - Status das variáveis de ambiente (sem autenticação)
+router.get('/debug', painelController.debugStatus);
+
 module.exports = router;
