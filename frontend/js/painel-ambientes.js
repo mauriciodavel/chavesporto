@@ -567,58 +567,93 @@ async function uploadMedia() {
     console.log('   Arquivo:', file.name, '|', file.type, '|', file.size, 'bytes');
     console.log('   Tipo de mídia:', currentUploadType);
 
-    const response = await fetch(`${API_BASE}/painel/media/upload`, {
+    // Passo 1: Preparar upload (backend deleta antigos e retorna info)
+    console.log('📝 Passo 1: Preparando upload no servidor...');
+    const filename = `media_${currentUploadType}_${Date.now()}${getFileExtension(file.name)}`;
+    
+    const prepareResponse = await fetch(`${API_BASE}/painel/media/prepare-upload`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${adminToken}`
+        'Authorization': `Bearer ${adminToken}`,
+        'Content-Type': 'application/json'
       },
-      body: formData
+      body: JSON.stringify({
+        type: currentUploadType,
+        filename: filename,
+        filesize: file.size
+      })
     });
 
-    console.log('📬 Resposta recebida - Status:', response.status, response.statusText);
-
-    // Primeiro tenta ler a resposta como texto para debug
-    const responseText = await response.text();
-    console.log('📄 Response text:', responseText.substring(0, 500));
-
-    // Depois tenta fazer parse de JSON
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('❌ Erro ao fazer parse de JSON:', parseError.message);
-      console.error('   Response recebida:', responseText);
-      showUploadStatus(`❌ Erro de servidor: Resposta inválida (${response.status})`, 'error');
+    if (!prepareResponse.ok) {
+      const errorText = await prepareResponse.text();
+      console.error('❌ Erro ao preparar upload:', prepareResponse.status, errorText);
+      showUploadStatus(`❌ Erro ao preparar upload (${prepareResponse.status})`, 'error');
       return;
     }
 
-    if (data.success) {
-      // Criar objeto de mídia
-      const media = {
-        type: currentUploadType,
-        filename: data.filename,
-        url: data.url,
-        timestamp: new Date().toISOString()
-      };
+    const prepareData = await prepareResponse.json();
+    console.log('✅ Upload preparado:', prepareData);
 
-      // Salvar no localStorage
-      saveMediaToStorage(media);
-      
-      // Atualizar exibição
-      displayMedia(currentUploadType, media);
-
-      showUploadStatus('✅ Arquivo enviado com sucesso!', 'success');
-      input.value = '';
-      console.log('📤 Mídia enviada:', media);
-    } else {
-      console.error('❌ Erro de resposta:', data);
-      showUploadStatus(`❌ ${data.message || 'Erro ao enviar'} ${data.error ? '(' + data.error + ')' : ''}`, 'error');
+    if (!prepareData.success) {
+      showUploadStatus(`❌ ${prepareData.message}`, 'error');
+      return;
     }
+
+    // Passo 2: Fazer upload direto para Supabase (sem passar pelo backend)
+    console.log('📤 Passo 2: Fazendo upload direto para Supabase...');
+    console.log('   URL:', prepareData.uploadUrl);
+
+    const uploadResponse = await fetch(prepareData.uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${prepareData.supabaseKey}`,
+        'Content-Type': file.type
+      },
+      body: file
+    });
+
+    console.log('📬 Resposta do Supabase - Status:', uploadResponse.status);
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('❌ Erro no upload direto:', uploadResponse.status, errorText.substring(0, 200));
+      showUploadStatus(`❌ Erro ao fazer upload (${uploadResponse.status})`, 'error');
+      return;
+    }
+
+    // Passo 3: Gerar URL pública
+    console.log('🔗 Passo 3: Gerando URL pública...');
+    const publicUrl = `${process.env.SUPABASE_URL || 'https://gxkmcqcgorkscabzuhks.supabase.co'}/storage/v1/object/public/${prepareData.bucket}/${prepareData.uploadPath}`;
+
+    // Criar objeto de mídia
+    const media = {
+      type: currentUploadType,
+      filename: filename,
+      url: publicUrl,
+      timestamp: new Date().toISOString()
+    };
+
+    // Salvar no localStorage
+    saveMediaToStorage(media);
+    
+    // Atualizar exibição
+    displayMedia(currentUploadType, media);
+
+    showUploadStatus('✅ Arquivo enviado com sucesso!', 'success');
+    input.value = '';
+    console.log('📤 Mídia enviada:', media);
   } catch (error) {
     console.error('❌ Erro ao enviar arquivo:', error);
     console.error('   Stack:', error.stack);
     showUploadStatus('❌ Erro ao enviar arquivo: ' + error.message, 'error');
   }
+}
+
+// Helper para extrair extensão do arquivo
+function getFileExtension(filename) {
+  const match = filename.match(/\.[^.]*$/);
+  return match ? match[0] : '';
+}
 }
 
 // ============================================

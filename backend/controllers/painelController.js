@@ -343,6 +343,96 @@ exports.uploadMedia = async (req, res) => {
 };
 
 // ============================================
+// PREPARAR UPLOAD DIRETO (sem payload de arquivo)
+// Endpoint pequeno que retorna info para cliente fazer upload direto ao Supabase
+// ============================================
+
+exports.prepareDirectUpload = async (req, res) => {
+  try {
+    console.log('📝 [MEDIA] Preparando upload direto');
+
+    if (!req.user || req.user.role !== 'admin') {
+      console.error('❌ Usuário não é admin');
+      return res.status(403).json({
+        success: false,
+        message: 'Apenas administradores podem fazer upload'
+      });
+    }
+
+    const { type, filename: clientFilename, filesize } = req.body;
+    console.log('   Type:', type, '| Filename:', clientFilename, '| Size:', filesize);
+
+    if (!type || !['1', '2', '3'].includes(String(type))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tipo de mídia inválido (1, 2 ou 3)'
+      });
+    }
+
+    if (!clientFilename) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nome do arquivo não fornecido'
+      });
+    }
+
+    // Validar tamanho
+    const isVideo = type === '3';
+    const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+    if (filesize > maxSize) {
+      return res.status(400).json({
+        success: false,
+        message: `Arquivo muito grande. Máximo: ${maxSize / 1024 / 1024}MB`
+      });
+    }
+
+    // Limpar APENAS (não fazemos upload aqui)
+    if (IS_PRODUCTION) {
+      console.log(`   🗑️ Limpando arquivos antigos de tipo ${type}...`);
+      try {
+        const { data: oldFiles } = await supabase.storage
+          .from(BUCKET_NAME)
+          .list('painel', { search: `media_${type}_` });
+
+        if (oldFiles && oldFiles.length > 0) {
+          for (const oldFile of oldFiles) {
+            await supabase.storage.from(BUCKET_NAME).remove([`painel/${oldFile.name}`]);
+            console.log(`      ✓ Removido: ${oldFile.name}`);
+          }
+        }
+      } catch (cleanError) {
+        console.warn('⚠️ Erro ao limpar (não crítico):', cleanError.message);
+      }
+    }
+
+    // Retornar info para o cliente fazer upload direto
+    const uploadPath = `painel/${clientFilename}`;
+    const uploadUrl = `${process.env.SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${uploadPath}`;
+
+    console.log('✅ Upload preparado');
+    console.log(`   URL: ${uploadUrl}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Pronto para upload direto',
+      uploadUrl: uploadUrl,
+      uploadPath: uploadPath,
+      bucket: BUCKET_NAME,
+      filename: clientFilename,
+      type: type,
+      supabaseKey: process.env.SUPABASE_KEY
+    });
+  } catch (error) {
+    console.error('❌ Erro ao preparar upload:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Erro ao preparar upload',
+      error: error.message
+    });
+  }
+};
+
+// ============================================
 // DELETE DE MÍDIA
 // ============================================
 

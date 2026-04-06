@@ -30,8 +30,11 @@ router.get('/media', painelController.getMediaList);
 // ROTAS PROTEGIDAS (ADMIN)
 // ============================================
 
-// POST /api/painel/media/upload - Upload de mídia
+// POST /api/painel/media/upload - Upload de mídia (tradicional com payload)
 router.post('/media/upload', verifyToken, verifyAdmin, upload.single('file'), painelController.uploadMedia);
+
+// POST /api/painel/media/prepare-upload - Preparar upload direto (retorna URL sem arquivo)
+router.post('/media/prepare-upload', verifyToken, verifyAdmin, painelController.prepareDirectUpload);
 
 // Error handler para multer
 router.use((err, req, res, next) => {
