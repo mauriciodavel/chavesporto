@@ -203,24 +203,35 @@ exports.uploadMedia = async (req, res) => {
     if (IS_PRODUCTION) {
       // ========== PRODUÇÃO: Supabase Storage ==========
       console.log('☁️ [PROD] Usando Supabase Storage');
+      console.log(`   Bucket: ${BUCKET_NAME}`);
+      console.log(`   Arquivo: ${filename}`);
+      console.log(`   Tipo MIME: ${req.file.mimetype}`);
+      console.log(`   Tamanho: ${req.file.size} bytes`);
 
       // Listar arquivos antigos do mesmo tipo para deletar
       try {
+        console.log(`   📋 Listando arquivos antigos de tipo ${type}...`);
         const { data: oldFiles, error: listError } = await supabase.storage
           .from(BUCKET_NAME)
           .list(`painel`, { search: `media_${type}_` });
 
         if (!listError && oldFiles && oldFiles.length > 0) {
+          console.log(`   🗑️ Encontrados ${oldFiles.length} arquivo(s) antigo(s)`);
           for (const oldFile of oldFiles) {
             await supabase.storage.from(BUCKET_NAME).remove([`painel/${oldFile.name}`]);
-            console.log(`🗑️ Arquivo antigo removido do Supabase: ${oldFile.name}`);
+            console.log(`      ✓ Removido: ${oldFile.name}`);
           }
+        } else if (listError) {
+          console.log(`   ⚠️ Erro ao listar (não crítico): ${listError.message}`);
+        } else {
+          console.log(`   ✓ Nenhum arquivo antigo para remover`);
         }
       } catch (cleanError) {
         console.warn('⚠️ Erro ao limpar mídia anterior no Supabase:', cleanError.message);
       }
 
       // Upload para Supabase Storage
+      console.log(`   📤 Iniciando upload para painel/${filename}...`);
       const { data, error } = await supabase.storage
         .from(BUCKET_NAME)
         .upload(`painel/${filename}`, req.file.buffer, {
@@ -229,22 +240,34 @@ exports.uploadMedia = async (req, res) => {
         });
 
       if (error) {
-        console.error('❌ Erro ao fazer upload para Supabase:', error);
+        console.error('❌ ERRO NO UPLOAD:', {
+          message: error.message,
+          code: error.code,
+          status: error.status,
+          fullError: error
+        });
         return res.status(500).json({
           success: false,
           message: 'Erro ao enviar arquivo para Supabase',
-          error: error.message
+          error: error.message,
+          details: {
+            code: error.code,
+            status: error.status,
+            bucket: BUCKET_NAME,
+            filename: filename
+          }
         });
       }
 
       // Gerar URL pública
+      console.log(`   🔗 Gerando URL pública...`);
       const { data: publicData } = supabase.storage
         .from(BUCKET_NAME)
         .getPublicUrl(`painel/${filename}`);
 
       const url = publicData.publicUrl;
-      console.log('✅ Arquivo enviado para Supabase:', filename);
-      console.log('✅ URL pública:', url);
+      console.log('✅ UPLOAD BEM-SUCEDIDO!');
+      console.log(`   URL: ${url}`);
 
       return res.status(200).json({
         success: true,
