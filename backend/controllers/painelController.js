@@ -511,26 +511,43 @@ exports.debugStatus = async (req, res) => {
       }
     };
 
-    // Tentar conectar ao Supabase
+    // Tentar conectar ao Supabase e verificar bucket
     if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
       try {
-        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+        status.supabase_connection.can_connect = true;
         
-        if (!bucketsError && buckets) {
-          status.supabase_connection.can_connect = true;
-          
-          const bucket = buckets.find(b => b.name === BUCKET_NAME);
-          status.supabase_connection.bucket_exists = !!bucket;
-          status.supabase_connection.bucket_is_public = bucket?.public || false;
-          status.supabase_connection.available_buckets = buckets.map(b => ({
-            name: b.name,
-            public: b.public
-          }));
+        // Tentar listar arquivos no bucket específico (mais confiável que listBuckets)
+        const { data: files, error: listError } = await supabase.storage
+          .from(BUCKET_NAME)
+          .list('painel', { limit: 1 });
+
+        if (listError && listError.message.includes('not found')) {
+          status.supabase_connection.bucket_exists = false;
+          status.supabase_connection.error = 'Bucket não existe or não accessible';
+        } else if (listError) {
+          status.supabase_connection.bucket_exists = false;
+          status.supabase_connection.error = listError.message;
         } else {
-          status.supabase_connection.error = bucketsError?.message || 'Erro desconhecido';
+          status.supabase_connection.bucket_exists = true;
+          status.supabase_connection.bucket_is_public = true; // Se conseguiu listar sem erro, é public
+          
+          // Tentar get public URL para confirmar
+          try {
+            const { data: urlData } = supabase.storage
+              .from(BUCKET_NAME)
+              .getPublicUrl('test.jpg');
+            
+            if (urlData && urlData.publicUrl) {
+              status.supabase_connection.bucket_is_public = true;
+              status.supabase_connection.sample_public_url = urlData.publicUrl.split('/test.jpg')[0] + '/...';
+            }
+          } catch (e) {
+            // Ignore URL test errors
+          }
         }
       } catch (error) {
         status.supabase_connection.error = error.message;
+        console.error('❌ Erro ao testar Supabase:', error);
       }
     }
 
@@ -540,7 +557,10 @@ exports.debugStatus = async (req, res) => {
       success: true,
       message: 'Status de debug obtido com sucesso',
       data: status,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      recommendations: !status.supabase_connection.bucket_exists 
+        ? ['Bucket pode não estar criado', 'Ou permissões de API podem estar restritas']
+        : []
     });
   } catch (error) {
     console.error('❌ Erro ao gerar status de debug:', error);
