@@ -577,6 +577,37 @@ async function uploadMedia() {
     console.log('   Bucket:', BUCKET_NAME);
     console.log('   Path:', uploadPath);
 
+    // Limpar arquivos antigos do mesmo tipo
+    console.log('🗑️ Limpando arquivos antigos de tipo', currentUploadType);
+    try {
+      // Listar arquivos antigos
+      const listUrl = `${SUPABASE_URL}/storage/v1/object/list/${BUCKET_NAME}/painel?search=media_${currentUploadType}_`;
+      const listResponse = await fetch(listUrl, {
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      
+      if (listResponse.ok) {
+        const listData = await listResponse.json();
+        console.log('   Encontrados:', listData.length, 'arquivo(s) antigo(s)');
+        
+        // Deletar cada arquivo antigo
+        for (const oldFile of listData) {
+          const deleteUrl = `${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/painel/${oldFile.name}`;
+          await fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+          });
+          console.log('   ✓ Removido:', oldFile.name);
+        }
+      }
+    } catch (cleanError) {
+      console.warn('⚠️ Erro ao limpar antigos (não crítico):', cleanError.message);
+    }
+
     // Fazer upload direto via API REST do Supabase
     const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${uploadPath}`;
     
