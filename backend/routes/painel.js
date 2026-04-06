@@ -61,6 +61,31 @@ router.delete('/media/:type', verifyToken, verifyAdmin, painelController.deleteM
 // GET /api/painel/debug - Status das variáveis de ambiente (sem autenticação)
 router.get('/debug', painelController.debugStatus);
 
+// GET /api/painel/debug/upload-test - Teste de upload (GET - apenas mostra status e instruções)
+router.get('/debug/upload-test', async (req, res) => {
+  try {
+    console.log('🧪 [DEBUG] GET upload-test - Mostrando instruções');
+    
+    res.status(200).json({
+      success: true,
+      message: 'Use POST para testar upload',
+      usage: 'POST /api/painel/debug/upload-test',
+      details: {
+        method: 'POST',
+        body: 'Nenhum body necessário (vazio ou {})' ,
+        response: 'Retorna arquivo PNG de teste enviado para Supabase'
+      },
+      curl_example: 'curl -X POST https://chavesporto.vercel.app/api/painel/debug/upload-test'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Erro',
+      error: error.message
+    });
+  }
+});
+
 // POST /api/painel/debug/upload-test - Teste de upload com arquivo de teste
 router.post('/debug/upload-test', async (req, res) => {
   try {
