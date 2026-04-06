@@ -21,5 +21,16 @@
       "maxDuration": 60,
       "memory": 3008
     }
-  }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Content-Length",
+          "value": "104857600"
+        }
+      ]
+    }
+  ]
 }
