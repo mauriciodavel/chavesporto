@@ -618,12 +618,13 @@ async function uploadMedia() {
 
     // Fazer upload usando SDK Supabase (muito mais seguro e confiável)
     console.log('📤 Enviando arquivo para Supabase...');
+    console.log('   Usando upsert=true para sobrescrever arquivo anterior');
     
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(uploadPath, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: true
       });
 
     if (error) {
@@ -795,7 +796,8 @@ function displayMedia(type, media) {
   placeholder.style.display = 'none';
   display.style.display = 'block';
   if (controls) {
-    controls.style.display = 'block';
+    // Mostrar controles apenas se for admin
+    controls.style.display = isAdminMode ? 'block' : 'none';
   }
   
   console.log(`✅ Mídia tipo ${type} exibida com sucesso`);
@@ -809,42 +811,107 @@ function createObjectURL(media) {
   return media.url || '';
 }
 
-function removeMedia(type) {
+async function removeMedia(type) {
+  // Verificar se é admin
+  if (!isAdminMode || !adminToken) {
+    console.warn('⚠️ Apenas admin pode remover mídias');
+    alert('❌ Apenas administradores podem remover mídias');
+    return;
+  }
+
+  console.log('🗑️ Iniciando remoção de mídia tipo', type);
+  
   const mediaItem = document.getElementById(`mediaItem${type}`);
   const placeholder = document.getElementById(`mediaPlaceholder${type}`);
   const display = document.getElementById(`media${type === 3 ? 'Video' : 'Image'}${type}`);
   const controls = document.getElementById(`mediaControls${type}`);
 
-  // Esconder o media-item inteiro
-  mediaItem.style.display = 'none';
-  placeholder.style.display = 'flex';
-  display.style.display = 'none';
-  controls.style.display = 'none';
-  display.src = '';
+  try {
+    // Remover do bucket Supabase primeiro
+    console.log('☁️ Deletando arquivo do Supabase...');
+    const SUPABASE_URL = 'https://gxkmcqcgorkscabzuhks.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_NoPNne9CTg0PAHoAwGq_Rw_Ems6S31r';
+    const BUCKET_NAME = 'painel-media';
 
-  // Remover do localStorage
-  const storage = JSON.parse(localStorage.getItem(MEDIA_STORAGE_KEY) || '{}');
-  delete storage[`media_${type}`];
-  localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(storage));
+    const { createClient } = window.supabase;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // Remover do servidor
-  deleteMediaFromServer(type);
+    // Primeiro, listar arquivos dessa mídia para deletar
+    const { data: files, error: listError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .list('painel', {
+        search: `media_${type}_`,
+        limit: 100
+      });
 
-  console.log('🗑️ Mídia removida:', type);
+    if (listError) {
+      console.error('❌ Erro ao listar arquivos:', listError.message);
+      throw listError;
+    }
+
+    // Deletar cada arquivo encontrado
+    if (files && files.length > 0) {
+      const filesToDelete = files.map(f => `painel/${f.name}`);
+      console.log('   Deletando arquivos:', filesToDelete);
+      
+      const { error: deleteError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .remove(filesToDelete);
+
+      if (deleteError) {
+        console.error('❌ Erro ao deletar arquivos:', deleteError.message);
+        throw deleteError;
+      }
+      
+      console.log('✅ Arquivos deletados do Supabase');
+    } else {
+      console.log('ℹ️ Nenhum arquivo encontrado para deletar');
+    }
+
+    // Esconder o media-item inteiro
+    mediaItem.style.display = 'none';
+    placeholder.style.display = 'flex';
+    display.style.display = 'none';
+    controls.style.display = 'none';
+    display.src = '';
+
+    // Remover do localStorage
+    const storage = JSON.parse(localStorage.getItem(MEDIA_STORAGE_KEY) || '{}');
+    delete storage[`media_${type}`];
+    localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(storage));
+
+    // Remover do servidor também (como backup)
+    await deleteMediaFromServer(type);
+
+    console.log('✅ Mídia removida com sucesso:', type);
+    showUploadStatus(`✅ Mídia ${type} removida com sucesso!`, 'success');
+  } catch (error) {
+    console.error('❌ Erro ao remover mídia:', error);
+    showUploadStatus(`❌ Erro ao remover mídia: ${error.message}`, 'error');
+  }
 }
 
 async function deleteMediaFromServer(type) {
-  if (!adminToken) return;
+  if (!adminToken) {
+    console.warn('⚠️ Token admin não disponível');
+    return;
+  }
 
   try {
-    await fetch(`${API_BASE}/painel/media/${type}`, {
+    const response = await fetch(`${API_BASE}/painel/media/${type}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${adminToken}`
       }
     });
+    
+    if (response.ok) {
+      console.log('✅ Mídia deletada do servidor');
+    } else {
+      console.warn(`⚠️ Servidor retornou status ${response.status}`);
+    }
   } catch (error) {
-    console.error('❌ Erro ao deletar mídia do servidor:', error);
+    console.error('⚠️ Erro ao deletar mídia do servidor (não crítico):', error.message);
   }
 }
 
