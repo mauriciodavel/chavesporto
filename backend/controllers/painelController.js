@@ -553,21 +553,27 @@ exports.getMediaList = async (req, res) => {
           console.log('   📂 Arquivos encontrados:', files.map(f => f.name).join(', '));
         }
 
-        // Agrupar mídias por tipo (pegar a mais recente de cada)
+        // Buscar mídias por nome fixo (cada tipo tem um arquivo específico)
         for (let type = 1; type <= 3; type++) {
-          const typeFiles = (files || [])
-            .filter(f => f.name.startsWith(`media_${type}_`))
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Mais recente primeiro
+          // Extensões esperadas para cada tipo
+          const extensions = {
+            1: '.png',   // Imagem 1
+            2: '.png',   // Imagem 2
+            3: '.mp4'    // Vídeo
+          };
+          
+          const expectedFileName = `media_${type}${extensions[type]}`;
+          const typeFile = files?.find(f => f.name === expectedFileName);
 
-          console.log(`   [Tipo ${type}] Encontrados: ${typeFiles.length} arquivo(s)`);
+          console.log(`   [Tipo ${type}] Procurando por: ${expectedFileName} → ${typeFile ? 'ENCONTRADO' : 'NÃO encontrado'}`);
 
-          if (typeFiles.length > 0) {
+          if (typeFile) {
             const { data: publicData } = supabase.storage
               .from(BUCKET_NAME)
-              .getPublicUrl(`painel/${typeFiles[0].name}`);
+              .getPublicUrl(`painel/${typeFile.name}`);
 
             media[type] = {
-              filename: typeFiles[0].name,
+              filename: typeFile.name,
               url: publicData.publicUrl
             };
             console.log(`   ✅ media_${type}: ${publicData.publicUrl}`);

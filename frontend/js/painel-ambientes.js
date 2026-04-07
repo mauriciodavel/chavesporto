@@ -576,45 +576,17 @@ async function uploadMedia() {
     const { createClient } = window.supabase;
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Preparar nome do arquivo
-    const filename = `media_${currentUploadType}_${Date.now()}${getFileExtension(file.name)}`;
+    // Preparar nome do arquivo (FIXO, sem timestamp - assim upsert sobrescreve)
+    const fileExtension = getFileExtension(file.name);
+    const filename = `media_${currentUploadType}${fileExtension}`;
     const uploadPath = `painel/${filename}`;
 
     console.log('   Bucket:', BUCKET_NAME);
     console.log('   Path:', uploadPath);
+    console.log('   ℹ️ Usando nome FIXO para cada tipo - upsert vai sobrescrever automático');
 
-    // Limpar arquivos antigos do mesmo tipo
-    console.log('🗑️ Limpando arquivos antigos de tipo', currentUploadType);
-    try {
-      // Listar arquivos antigos usando SDK
-      const { data: oldFiles, error: listError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .list('painel', {
-          search: `media_${currentUploadType}_`,
-          limit: 100
-        });
-
-      if (!listError && oldFiles && oldFiles.length > 0) {
-        console.log('   Encontrados:', oldFiles.length, 'arquivo(s) antigo(s)');
-        
-        // Deletar cada arquivo antigo
-        for (const oldFile of oldFiles) {
-          try {
-            await supabase.storage
-              .from(BUCKET_NAME)
-              .remove([`painel/${oldFile.name}`]);
-            
-            console.log('   ✓ Removido:', oldFile.name);
-          } catch (e) {
-            console.log('   ⚠️ Não foi possível remover:', oldFile.name);
-          }
-        }
-      } else {
-        console.log('   ✓ Nenhum arquivo antigo para remover');
-      }
-    } catch (cleanError) {
-      console.warn('⚠️ Erro ao limpar antigos (não crítico):', cleanError.message);
-    }
+    // NÃO precisa mais limpar arquivos antigos porque o upsert=true sobrescreve
+    console.log('🔄 Upload com upsert=true vai sobrescrever arquivo anterior');
 
     // Fazer upload usando SDK Supabase (muito mais seguro e confiável)
     console.log('📤 Enviando arquivo para Supabase...');
@@ -835,7 +807,7 @@ async function removeMedia(type) {
   const controls = document.getElementById(`mediaControls${type}`);
 
   try {
-    // Remover do bucket Supabase primeiro
+    // Remover do bucket Supabase
     console.log('☁️ Deletando arquivo do Supabase...');
     const SUPABASE_URL = 'https://gxkmcqcgorkscabzuhks.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_NoPNne9CTg0PAHoAwGq_Rw_Ems6S31r';
@@ -844,36 +816,28 @@ async function removeMedia(type) {
     const { createClient } = window.supabase;
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Primeiro, listar arquivos dessa mídia para deletar
-    const { data: files, error: listError } = await supabase.storage
+    // Determinar extensão do arquivo baseada no tipo
+    const fileExtensions = {
+      1: '.png',   // Imagem 1
+      2: '.png',   // Imagem 2
+      3: '.mp4'    // Vídeo
+    };
+    
+    const ext = fileExtensions[type] || '';
+    const filePath = `painel/media_${type}${ext}`;
+    
+    console.log('   Tentando deletar:', filePath);
+
+    // Deletar arquivo com nome fixo
+    const { error: deleteError } = await supabase.storage
       .from(BUCKET_NAME)
-      .list('painel', {
-        search: `media_${type}_`,
-        limit: 100
-      });
+      .remove([filePath]);
 
-    if (listError) {
-      console.error('❌ Erro ao listar arquivos:', listError.message);
-      throw listError;
-    }
-
-    // Deletar cada arquivo encontrado
-    if (files && files.length > 0) {
-      const filesToDelete = files.map(f => `painel/${f.name}`);
-      console.log('   Deletando arquivos:', filesToDelete);
-      
-      const { error: deleteError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .remove(filesToDelete);
-
-      if (deleteError) {
-        console.error('❌ Erro ao deletar arquivos:', deleteError.message);
-        throw deleteError;
-      }
-      
-      console.log('✅ Arquivos deletados do Supabase');
+    if (deleteError) {
+      console.warn('⚠️ Arquivo pode não existir ou erro ao deletar:', deleteError.message);
+      // Continuar mesmo se houver erro (arquivo pode já ter sido deletado)
     } else {
-      console.log('ℹ️ Nenhum arquivo encontrado para deletar');
+      console.log('✅ Arquivo deletado do Supabase');
     }
 
     // Esconder o media-item inteiro
@@ -887,6 +851,7 @@ async function removeMedia(type) {
     const storage = JSON.parse(localStorage.getItem(MEDIA_STORAGE_KEY) || '{}');
     delete storage[`media_${type}`];
     localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(storage));
+    console.log('✅ Removido do localStorage');
 
     // Remover do servidor também (como backup)
     await deleteMediaFromServer(type);
@@ -895,17 +860,19 @@ async function removeMedia(type) {
     showUploadStatus(`✅ Mídia ${type} removida com sucesso!`, 'success');
   } catch (error) {
     console.error('❌ Erro ao remover mídia:', error);
+    console.error('   Stack:', error.stack);
     showUploadStatus(`❌ Erro ao remover mídia: ${error.message}`, 'error');
   }
 }
 
 async function deleteMediaFromServer(type) {
   if (!adminToken) {
-    console.warn('⚠️ Token admin não disponível');
+    console.warn('⚠️ Token admin não disponível para backup no servidor');
     return;
   }
 
   try {
+    console.log('📡 Tentando deletar arquivo no servidor como backup...');
     const response = await fetch(`${API_BASE}/painel/media/${type}`, {
       method: 'DELETE',
       headers: {
@@ -914,12 +881,12 @@ async function deleteMediaFromServer(type) {
     });
     
     if (response.ok) {
-      console.log('✅ Mídia deletada do servidor');
+      console.log('✅ Mídia deletada do servidor também');
     } else {
-      console.warn(`⚠️ Servidor retornou status ${response.status}`);
+      console.warn(`⚠️ Servidor retornou status ${response.status} (não crítico)`);
     }
   } catch (error) {
-    console.error('⚠️ Erro ao deletar mídia do servidor (não crítico):', error.message);
+    console.warn('⚠️ Erro ao deletar do servidor (não crítico):', error.message);
   }
 }
 
