@@ -531,14 +531,26 @@ exports.getMediaList = async (req, res) => {
     if (IS_PRODUCTION) {
       // ========== PRODUÇÃO: Supabase Storage ==========
       console.log('☁️ [PROD] Listando mídias do Supabase Storage');
+      console.log('   Bucket:', BUCKET_NAME);
 
       try {
         const { data: files, error } = await supabase.storage
           .from(BUCKET_NAME)
-          .list('painel');
+          .list('painel', {
+            limit: 100
+          });
+
+        console.log('   Resultado da listagem:', { files: files?.length || 0, error: error?.message || 'sem erro' });
 
         if (error) {
+          console.error('   ❌ Erro ao listar Supabase:', error.message);
           throw error;
+        }
+
+        if (!files || files.length === 0) {
+          console.log('   ℹ️ Nenhum arquivo encontrado no Supabase');
+        } else {
+          console.log('   📂 Arquivos encontrados:', files.map(f => f.name).join(', '));
         }
 
         // Agrupar mídias por tipo (pegar a mais recente de cada)
@@ -546,6 +558,8 @@ exports.getMediaList = async (req, res) => {
           const typeFiles = (files || [])
             .filter(f => f.name.startsWith(`media_${type}_`))
             .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Mais recente primeiro
+
+          console.log(`   [Tipo ${type}] Encontrados: ${typeFiles.length} arquivo(s)`);
 
           if (typeFiles.length > 0) {
             const { data: publicData } = supabase.storage
@@ -556,11 +570,14 @@ exports.getMediaList = async (req, res) => {
               filename: typeFiles[0].name,
               url: publicData.publicUrl
             };
-            console.log(`   media_${type}: ${publicData.publicUrl}`);
+            console.log(`   ✅ media_${type}: ${publicData.publicUrl}`);
+          } else {
+            console.log(`   ⏭️  media_${type}: sem arquivos`);
           }
         }
       } catch (error) {
-        console.warn('⚠️ Erro ao listar mídias do Supabase:', error.message);
+        console.error('❌ Erro ao listar mídias do Supabase:', error.message);
+        console.error('   Stack:', error.stack);
         // Retornar vazio se houver erro
       }
     } else {
@@ -571,6 +588,7 @@ exports.getMediaList = async (req, res) => {
 
       try {
         const files = await fs.readdir(mediaDir);
+        console.log('   Arquivos encontrados:', files.length, files.join(', '));
 
         // Agrupar mídias por tipo (pegar a mais recente de cada)
         for (let type = 1; type <= 3; type++) {
@@ -579,19 +597,23 @@ exports.getMediaList = async (req, res) => {
             .sort()
             .reverse(); // Ordem decrescente (mais novo primeiro)
 
+          console.log(`   [Tipo ${type}] Encontrados: ${typeFiles.length} arquivo(s)`);
+
           if (typeFiles.length > 0) {
             const absoluteUrl = `${baseUrl}/media/painel/${typeFiles[0]}`;
             media[type] = {
               filename: typeFiles[0],
               url: absoluteUrl
             };
-            console.log(`   media_${type}: ${absoluteUrl}`);
+            console.log(`   ✅ media_${type}: ${absoluteUrl}`);
           }
         }
       } catch (readError) {
-        console.log('⚠️ Pasta de mídia não existe ainda');
+        console.log('⚠️ Pasta de mídia não existe ou acesso negado:', readError.message);
       }
     }
+
+    console.log('📊 Resultado final:', JSON.stringify(media, null, 2));
 
     return res.status(200).json({
       success: true,
@@ -600,6 +622,7 @@ exports.getMediaList = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Erro ao listar mídias:', error);
+    console.error('   Stack:', error.stack);
     return res.status(500).json({
       success: false,
       message: 'Erro ao listar mídias',

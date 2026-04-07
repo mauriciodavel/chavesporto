@@ -595,12 +595,14 @@ async function uploadMedia() {
         
         // Deletar cada arquivo antigo
         for (const oldFile of oldFiles) {
-          const { error: deleteError } = await supabase.storage
-            .from(BUCKET_NAME)
-            .remove([`painel/${oldFile.name}`]);
-          
-          if (!deleteError) {
+          try {
+            await supabase.storage
+              .from(BUCKET_NAME)
+              .remove([`painel/${oldFile.name}`]);
+            
             console.log('   ✓ Removido:', oldFile.name);
+          } catch (e) {
+            console.log('   ⚠️ Não foi possível remover:', oldFile.name);
           }
         }
       } else {
@@ -682,24 +684,42 @@ async function loadMediaFromServer() {
     console.log('📥 Carregando mídias do servidor...');
     
     const response = await fetch(`${API_BASE}/painel/media`);
+    console.log('   Status da resposta:', response.status, response.statusText);
+    
     if (!response.ok) {
-      console.warn('⚠️ Erro ao carregar mídias do servidor');
+      console.warn('⚠️ Erro ao carregar mídias do servidor:', response.status);
       return;
     }
     
     const result = await response.json();
+    console.log('   Response do servidor:', JSON.stringify(result, null, 2));
     
     if (result.success && result.data) {
+      console.log('   Dados recebidos:', result.data);
+      let mediaCarregada = false;
+      
       [1, 2, 3].forEach(type => {
         const media = result.data[String(type)];
+        console.log(`   Verificando tipo ${type}:`, media);
+        
         if (media && media.url) {
           console.log(`✅ Mídia ${type} encontrada: ${media.url}`);
           displayMedia(type, media);
+          mediaCarregada = true;
+        } else {
+          console.log(`⚠️ Mídia ${type} não encontrada ou sem URL`);
         }
       });
+      
+      if (!mediaCarregada) {
+        console.warn('⚠️ Nenhuma mídia foi carregada do servidor');
+      }
+    } else {
+      console.warn('⚠️ Resposta do servidor inválida:', result);
     }
   } catch (error) {
     console.error('❌ Erro ao carregar mídias do servidor:', error);
+    console.error('   Stack trace:', error.stack);
   }
 }
 
@@ -715,24 +735,53 @@ function loadMediaFromStorage() {
 }
 
 function displayMedia(type, media) {
+  console.log(`🖼️  Exibindo mídia tipo ${type}:`, media);
+  
   const mediaItem = document.getElementById(`mediaItem${type}`);
   const placeholder = document.getElementById(`mediaPlaceholder${type}`);
   const display = document.getElementById(`media${type === 3 ? 'Video' : 'Image'}${type}`);
   const controls = document.getElementById(`mediaControls${type}`);
 
+  // Validar que todos os elementos existem
+  if (!mediaItem) {
+    console.error(`❌ Elemento mediaItem${type} não encontrado`);
+    return;
+  }
+  if (!placeholder) {
+    console.error(`❌ Elemento mediaPlaceholder${type} não encontrado`);
+    return;
+  }
+  if (!display) {
+    console.error(`❌ Elemento media${type === 3 ? 'Video' : 'Image'}${type} não encontrado`);
+    return;
+  }
+
+  const mediaUrl = media.url || createObjectURL(media);
+  
+  if (!mediaUrl) {
+    console.error(`❌ Não há URL para exibir mídia tipo ${type}`);
+    return;
+  }
+
+  console.log(`   Carregando URL: ${mediaUrl}`);
+  
   if (type === 3) {
     // Vídeo
-    display.src = media.url || createObjectURL(media);
+    display.src = mediaUrl;
   } else {
     // Imagem
-    display.src = media.url || createObjectURL(media);
+    display.src = mediaUrl;
   }
 
   // Mostrar o media-item
   mediaItem.style.display = 'flex';
   placeholder.style.display = 'none';
   display.style.display = 'block';
-  controls.style.display = 'block';
+  if (controls) {
+    controls.style.display = 'block';
+  }
+  
+  console.log(`✅ Mídia tipo ${type} exibida com sucesso`);
 }
 
 function createObjectURL(media) {
