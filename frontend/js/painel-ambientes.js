@@ -7,16 +7,21 @@
 // ============================================
 
 const API_BASE = '/api';
-const MEDIA_STORAGE_KEY = 'painel_media_storage';
-const ADMIN_TOKEN_KEY = 'painel_admin_token';
+const MEDIA_STORAGE_KEY = 'painel_media_storage'; // localStorage (não-sensível)
+const ADMIN_TOKEN_KEY = 'painel_admin_token';     // sessionStorage (mais seguro)
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutos em ms
 
 let isAdminMode = false;
 let adminToken = null;
 let currentUploadType = 1; // 1, 2, or 3
 let ambientesData = [];
 let filteredData = [];
+
+// Timeout de inatividade
+let inactivityTimer = null;
+let lastActivityTime = Date.now();
 
 // ============================================
 // INICIALIZAÇÃO
@@ -45,11 +50,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('💾 Verificando localStorage como fallback...');
   loadMediaFromStorage();
 
-  // Verificar token admin no localStorage
+  // Verificar token admin no sessionStorage (mais seguro que localStorage)
   checkAdminToken();
 
   // Event listeners
   setupEventListeners();
+  
+  // 🔐 Inicializar timeout de inatividade para admin
+  setupInactivityMonitoring();
 
   console.log('✅ Painel de Ambientes inicializado');
 });
@@ -408,7 +416,11 @@ async function handleAdminLogin(event) {
 
     if (data.success && data.user && data.user.role === 'admin') {
       adminToken = data.token;
-      localStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
+      // 🔐 SEGURANÇA: Usar sessionStorage em vez de localStorage
+      // sessionStorage limpa automaticamente ao fechar a aba/navegador
+      sessionStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
+      console.log('🔐 Token salvo em sessionStorage (limpa ao fechar aba)');
+      
       isAdminMode = true;
 
       enableAdminMode();
@@ -426,11 +438,18 @@ async function handleAdminLogin(event) {
 }
 
 function checkAdminToken() {
-  const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+  // 🔐 SEGURANÇA: Ler de sessionStorage (mais seguro que localStorage)
+  const token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
   if (token) {
     adminToken = token;
     isAdminMode = true;
+    lastActivityTime = Date.now(); // Atualizar tempo de atividade
     enableAdminMode();
+    
+    // Reiniciar timeout de inatividade
+    resetInactivityTimer();
+    
+    console.log('🔐 Token carregado de sessionStorage');
   }
 }
 
@@ -458,13 +477,22 @@ function enableAdminMode() {
     }
   });
 
-  console.log('✅ Modo admin ativado');
+  // 🔐 SEGURANÇA: Iniciar timer de inatividade
+  resetInactivityTimer();
+  console.log('✅ Modo admin ativado - Timer de inatividade iniciado (10 min)');
 }
 
 function logoutAdmin() {
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
+  // 🔐 SEGURANÇA: Limpar token de sessionStorage (não localStorage)
+  sessionStorage.removeItem(ADMIN_TOKEN_KEY);
   adminToken = null;
   isAdminMode = false;
+  
+  // Limpar timer de inatividade
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
 
   // Mostrar botão de login
   const loginBtn = document.getElementById('adminLoginBtnSidebar');
@@ -491,6 +519,49 @@ function logoutAdmin() {
 
   showUploadStatus('✅ Desconectado', 'success');
   console.log('✅ Modo admin desativado');
+}
+
+// ============================================
+// 🔐 SEGURANÇA: MONITORAMENTO DE INATIVIDADE
+// ============================================
+
+/**
+ * Configura monitoramento de inatividade para admin
+ * Faz logout automático após 10 minutos sem atividade
+ */
+function setupInactivityMonitoring() {
+  // Eventos de atividade do usuário
+  const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+  
+  activityEvents.forEach(event => {
+    document.addEventListener(event, resetInactivityTimer, true);
+  });
+  
+  console.log('🔐 Monitoramento de inatividade configurado (10 min)');
+}
+
+/**
+ * Reseta o timer de inatividade
+ * Se o admin está logado, reinicia a contagem
+ */
+function resetInactivityTimer() {
+  if (!isAdminMode) return; // Só monitorar se em modo admin
+  
+  // Limpar timer anterior
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+  }
+  
+  lastActivityTime = Date.now();
+  
+  // Iniciar novo timer de 10 minutos
+  inactivityTimer = setTimeout(() => {
+    if (isAdminMode) {
+      console.warn('⏱️ Timeout de inatividade atingido - fazendo logout...');
+      showUploadStatus('⏱️ Sessão expirada por inatividade (10 min). Faça login novamente.', 'warning');
+      logoutAdmin();
+    }
+  }, INACTIVITY_TIMEOUT);
 }
 
 // ============================================
