@@ -629,7 +629,15 @@ async function uploadMedia() {
 
     if (error) {
       console.error('❌ Erro no upload:', error);
-      showUploadStatus(`❌ Erro ao fazer upload: ${error.message}`, 'error');
+      console.error('   Error details:', {
+        status: error.status,
+        statusCode: error.statusCode,
+        message: error.message,
+        name: error.name,
+        error: error.error,
+        full: JSON.stringify(error, null, 2)
+      });
+      showUploadStatus(`❌ Erro ao fazer upload: ${error.message || error.error || 'Erro desconhecido'}`, 'error');
       return;
     }
 
