@@ -72,10 +72,13 @@ exports.getAmbientesComReservas = async (req, res) => {
 
         if (!historyError && history && history.length > 0) {
           const h = history[0];
+          // ✅ CORRIGIDO: A lógica correta de status é:
+          // - Se foi retirada E NÃO foi devolvida → 'withdrawn' (em uso)
+          // - Se foi retirada E foi devolvida → 'reservado' (disponível novamente)
           if (h.withdrawn_at && !h.returned_at) {
             keyStatus = 'withdrawn'; // Em uso - retirada mas não devolvida
           } else if (h.withdrawn_at && h.returned_at) {
-            keyStatus = 'returned'; // Devolvida
+            keyStatus = 'reservado'; // ✅ CORRIGIDO: Devolvida = Disponível novamente
           }
         }
       } catch (err) {
