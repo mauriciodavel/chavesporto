@@ -491,7 +491,7 @@
   text-align: left;
   font-weight: 600;
   border-bottom: 2px solid var(--senai-secondary);
-  font-size: 0.8rem;
+  font-size: 15px;
 }
 
 .ambientes-table tbody tr {
@@ -518,7 +518,7 @@
 .ambientes-table td {
   padding: 0.35rem 0.5rem;
   vertical-align: middle;
-  font-size: 0.85rem;
+  font-size: 15px;
   color: #ffffff;
   font-weight: 500;
 }
