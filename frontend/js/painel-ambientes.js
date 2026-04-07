@@ -38,8 +38,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Re-filtrar a cada minuto para acompanhar mudanças de turno
   setInterval(filterAndSort, 60000);
 
-  // Carregar mídia do servidor
+  // Carregar mídia do servidor E do localStorage como fallback
   await loadMediaFromServer();
+  
+  // Loadomédia local também (fallback se servidor falhar)
+  console.log('💾 Verificando localStorage como fallback...');
+  loadMediaFromStorage();
 
   // Verificar token admin no localStorage
   checkAdminToken();
@@ -724,14 +728,27 @@ async function loadMediaFromServer() {
 }
 
 function loadMediaFromStorage() {
+  console.log('💾 Carregando mídias do localStorage...');
   const storage = JSON.parse(localStorage.getItem(MEDIA_STORAGE_KEY) || '{}');
-
+  
+  console.log('   Dados no localStorage:', storage);
+  
+  let mediaCarregada = false;
+  
   [1, 2, 3].forEach(type => {
     const media = storage[`media_${type}`];
     if (media) {
+      console.log(`✅ Encontrada mídia ${type} no localStorage:`, media);
       displayMedia(type, media);
+      mediaCarregada = true;
+    } else {
+      console.log(`⏭️  Mídia ${type} não encontrada no localStorage`);
     }
   });
+  
+  if (!mediaCarregada) {
+    console.log('ℹ️ Nenhuma mídia encontrada no localStorage');
+  }
 }
 
 function displayMedia(type, media) {
