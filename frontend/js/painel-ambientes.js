@@ -450,6 +450,14 @@ function enableAdminMode() {
   // Mostrar indicador de admin
   document.getElementById('adminModeIndicator').style.display = 'block';
 
+  // Mostrar todos os botões de controle de mídia
+  [1, 2, 3].forEach(type => {
+    const controls = document.getElementById(`mediaControls${type}`);
+    if (controls) {
+      controls.style.display = 'block';
+    }
+  });
+
   console.log('✅ Modo admin ativado');
 }
 
@@ -472,6 +480,14 @@ function logoutAdmin() {
   closeUpdateMediaModal();
   
   document.getElementById('adminModeIndicator').style.display = 'none';
+
+  // Esconder todos os botões de controle de mídia
+  [1, 2, 3].forEach(type => {
+    const controls = document.getElementById(`mediaControls${type}`);
+    if (controls) {
+      controls.style.display = 'none';
+    }
+  });
 
   showUploadStatus('✅ Desconectado', 'success');
   console.log('✅ Modo admin desativado');
@@ -634,12 +650,18 @@ async function uploadMedia() {
     // Salvar no localStorage
     saveMediaToStorage(media);
     
-    // Atualizar exibição
+    // Atualizar exibição com os dados locais primeiro
     displayMedia(currentUploadType, media);
 
     showUploadStatus('✅ Arquivo enviado com sucesso!', 'success');
     input.value = '';
     console.log('✅ Mídia enviada:', media);
+    
+    // Recarregar mídias do servidor para sincronizar (após 1 segundo para garantir propagação)
+    console.log('🔄 Recarregando mídias do servidor em 1 segundo...');
+    setTimeout(() => {
+      loadMediaFromServer();
+    }, 1000);
   } catch (error) {
     console.error('❌ Erro ao enviar arquivo:', error);
     console.error('   Stack:', error.stack);
@@ -734,6 +756,7 @@ function loadMediaFromStorage() {
 
 function displayMedia(type, media) {
   console.log(`🖼️  Exibindo mídia tipo ${type}:`, media);
+  console.log(`   isAdminMode = ${isAdminMode}`);
   
   const mediaItem = document.getElementById(`mediaItem${type}`);
   const placeholder = document.getElementById(`mediaPlaceholder${type}`);
@@ -777,7 +800,9 @@ function displayMedia(type, media) {
   display.style.display = 'block';
   if (controls) {
     // Mostrar controles apenas se for admin
-    controls.style.display = isAdminMode ? 'block' : 'none';
+    const shouldShowControls = isAdminMode === true;
+    controls.style.display = shouldShowControls ? 'block' : 'none';
+    console.log(`   Controles: ${shouldShowControls ? '✅ VISÍVEL' : '❌ ESCONDIDO'} (isAdminMode=${isAdminMode})`);
   }
   
   console.log(`✅ Mídia tipo ${type} exibida com sucesso`);
