@@ -1069,11 +1069,12 @@
                     if (dayOfWeek === 0) {
                         blockoutInfo = '🚫 Domingo - Ambiente bloqueado';
                     } else {
-                        // Bloqueios se aplicam a todos os ambientes
-                        const blockout = blockouts.find(b => 
-                            dayDateStr >= b.start_date && 
-                            dayDateStr <= b.end_date
-                        );
+                        // Bloqueios podem ser globais (!b.environment_id) ou específicos de um ambiente
+                        const blockout = blockouts.find(b => {
+                            const dateMatches = dayDateStr >= b.start_date && dayDateStr <= b.end_date;
+                            const envMatches = !b.environment_id || b.environment_id === env.id;  // undefined = aplica a todos
+                            return dateMatches && envMatches;
+                        });
                         if (blockout) {
                             const blockoutLabel = getBlockoutTypeLabel(blockout.type);
                             const shiftInfo = blockout.shift ? ` (${blockout.shift})` : '';
@@ -1176,12 +1177,15 @@
                 };
             }
 
-            // Check if maintenance/blockout (applies to all environments)
-            // Bloqueios podem ter um shift específico ou null (aplica a todos os turnos)
+            // Check if maintenance/blockout
+            // Bloqueios podem ter:
+            // - environment_id: null/undefined (aplica a todos) ou ID específico
+            // - shift: null/undefined (aplica a todos os turnos) ou shift específico
             const blockout = blockouts.find(b => {
                 const dateMatches = dateStr >= b.start_date && dateStr <= b.end_date;
+                const envMatches = !b.environment_id || b.environment_id === envId;  // null = todos os ambientes
                 const shiftMatches = !b.shift || b.shift === shift;  // null = todos os turnos
-                return dateMatches && shiftMatches;
+                return dateMatches && envMatches && shiftMatches;
             });
             
             if (blockout) {
