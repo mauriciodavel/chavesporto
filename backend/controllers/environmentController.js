@@ -64,8 +64,10 @@ exports.getWeeklyAvailability = async (req, res) => {
       return `${year}-${month}-${day}`;
     };
 
-    // Parse dates
-    const start = new Date(startDate);
+    // Parse dates - IMPORTANTE: parse da string YYYY-MM-DD é interpretado como UTC
+    // Então preenchemos com midnight local time
+    const [year, month, day] = startDate.split('-');
+    const start = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     const end = new Date(start);
     end.setDate(end.getDate() + 6);
 
@@ -128,61 +130,38 @@ exports.getWeeklyAvailability = async (req, res) => {
     console.log(`📋 Found ${reservations?.length} total reservations, ${filteredReservations.length} in this week`);
 
     // Get blockouts for the week (maintenance, etc)
-    console.log('🔒 Buscando bloqueios com filtros:', { startStr, endStr });
+    console.log('🔒 [BLOCKOUTS] Buscando bloqueios sem filtro original...');
     let blockouts = [];
     
     // Tentar buscar bloqueios de forma segura
     try {
+      // IMPORTANTE: Usar mesma lógica que blockoutController.getBlockoutsForDateRange
       const { data: blockoutsData, error: blockoutsError } = await supabase
         .from('calendar_blockouts')
-        .select('id, blockout_start_date, blockout_end_date, blockout_reason, shift, deleted_at');
+        .select('id, blockout_start_date, blockout_end_date, observation, blockout_type, shift')
+        .lte('blockout_start_date', endStr)
+        .gte('blockout_end_date', startStr);
       
       if (blockoutsError) {
         console.warn('⚠️  Aviso ao buscar bloqueios:', blockoutsError.message);
         blockouts = [];
       } else {
-        console.log(`🔒 Total de bloqueios na tabela calendar_blockouts: ${blockoutsData?.length || 0}`);
+        console.log(`🔒 [BLOCKOUTS] Total de bloqueios na tabela (filtrados): ${blockoutsData?.length || 0}`);
         
-        // Log de todos os bloqueios para diagnóstico
-        if (blockoutsData?.length > 0) {
-          console.log('📋 TODOS OS BLOQUEIOS:', blockoutsData.map(b => ({
-            id: b.id.substring(0, 8),
-            start: b.blockout_start_date,
-            end: b.blockout_end_date,
-            reason: b.blockout_reason.substring(0, 30),
-            shift: b.shift,
-            deleted: b.deleted_at
-          })));
-        }
-        
-        // Filtrar em JavaScript - comparar como strings YYYY-MM-DD
+        // Filtrar deletados em JavaScript
         blockouts = (blockoutsData || [])
-          .filter(b => {
-            // Ignorar bloqueios deletados
-            if (b.deleted_at) {
-              console.log(`  ⏭️  Ignorando deletado: ${b.blockout_start_date}`);
-              return false;
-            }
-            return true;
-          })
-          .filter(b => {
-            // Comparar datas como strings
-            const blockoutPasses = b.blockout_start_date <= endStr && b.blockout_end_date >= startStr;
-            console.log(`  📅 ${b.blockout_start_date} a ${b.blockout_end_date}: ${blockoutPasses ? '✅ PASSA' : '❌ FORA DO PERÍODO'} (semana: ${startStr} a ${endStr})`);
-            return blockoutPasses;
-          })
           .map(b => ({
             id: b.id,
             start_date: b.blockout_start_date,
             end_date: b.blockout_end_date,
-            reason: b.blockout_reason,
+            reason: b.observation || b.blockout_type,
             shift: b.shift
           }));
         
-        console.log(`✅ Bloqueios filtrados para semana de ${startStr} a ${endStr}: ${blockouts.length} encontrados`);
+        console.log(`✅ [BLOCKOUTS] Bloqueios após filtro: ${blockouts.length} encontrados para semana ${startStr} a ${endStr}`);
         if (blockouts.length > 0) {
           blockouts.forEach(b => {
-            console.log(`   - ${b.start_date} a ${b.end_date}: ${b.reason} ${b.shift ? `(${b.shift})` : '(todos os turnos)'}`);
+            console.log(`   - ${b.start_date} a ${b.end_date}: ${b.reason}`);
           });
         }
       }
