@@ -56,13 +56,21 @@ exports.getWeeklyAvailability = async (req, res) => {
 
     console.log('📅 [ENVIRONMENTS] Obtendo disponibilidade semanal para:', startDate);
 
+    // Helper function to format date as YYYY-MM-DD without timezone conversion
+    const formatDateLocal = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     // Parse dates
     const start = new Date(startDate);
     const end = new Date(start);
     end.setDate(end.getDate() + 6);
 
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
+    const startStr = formatDateLocal(start);
+    const endStr = formatDateLocal(end);
 
     // Validar datas
     if (!startStr || !endStr || startStr === 'Invalid Date' || endStr === 'Invalid Date') {
