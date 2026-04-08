@@ -27,6 +27,7 @@ const setupRoutes = require('./routes/setup');
 const reservationRoutes = require('./routes/reservationRoutes');
 const blockoutRoutes = require('./routes/blockouts');
 const painelRoutes = require('./routes/painel');
+const environmentRoutes = require('./routes/environments');
 
 // Importar schedulers
 const { initializeScheduler } = require('./jobs/scheduleNotifications');
@@ -42,10 +43,16 @@ app.use('/api/setup', setupRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/blockouts', blockoutRoutes);
 app.use('/api/painel', painelRoutes);
+app.use('/api/environments', environmentRoutes);
 
 // Rota para painel de ambientes (público)
 app.get('/painel', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/painel-ambientes.html'));
+});
+
+// Rota para disponibilidade de ambientes
+app.get('/disponibilidade', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/disponibilidade-ambientes.html'));
 });
 
 // Rota raiz - servir login.html

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disponibilidade de Ambientes - Chavesporto</title>
+    <link rel="stylesheet" href="/frontend/css/styles.css">
+    <style>
+        :root {
+            --primary-color: #164194;
+            --secondary-color: #e84910;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --info: #3498db;
+            --white: #ffffff;
+            --light-gray: #f5f5f5;
+            --dark-gray: #333333;
+            --border-color: #ddd;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: var(--dark-gray);
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+
+        /* SIDEBAR */
+        .admin-sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, var(--primary-color) 0%, #0f2d52 100%);
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+        }
+
+        .admin-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .admin-logo-icon {
+            font-size: 28px;
+        }
+
+        .admin-logo h2 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .sidebar-section {
+            margin: 30px 0;
+        }
+
+        .sidebar-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sidebar-nav-item {
+            padding: 12px 15px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .sidebar-nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .sidebar-nav-item.active {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        /* MAIN CONTENT */
+        .admin-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0f3a6b;
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #d43810;
+        }
+
+        /* LEGEND */
+        .legend {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .color-free { background: #27ae60; }
+        .color-blocked { background: #e74c3c; }
+        .color-reserved { background: #9b59b6; }
+        .color-holiday { background: #3498db; }
+
+        /* CALENDAR */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .calendar-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            padding: 8px 15px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: #0f3a6b;
+        }
+
+        .current-week {
+            font-weight: 600;
+            min-width: 200px;
+            text-align: center;
+            color: var(--dark-gray);
+        }
+
+        /* CALENDAR TABLE */
+        .calendar-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        .calendar-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        .calendar-table thead {
+            background: var(--primary-color);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .calendar-table th {
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 13px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .calendar-table th:first-child {
+            text-align: left;
+            border-right: 2px solid rgba(255,255,255,0.2);
+            padding-left: 15px;
+        }
+
+        .calendar-table tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .calendar-table tbody tr:hover {
+            background: #f0f0f0;
+        }
+
+        .calendar-table td {
+            padding: 12px 10px;
+            border: 1px solid #eee;
+            text-align: center;
+            font-size: 13px;
+            height: 60px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calendar-table td:first-child {
+            font-weight: 600;
+            color: var(--primary-color);
+            border-right: 2px solid var(--primary-color);
+            padding-left: 15px;
+            text-align: left;
+            background: #f9f9f9;
+        }
+
+        .cell-day {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            gap: 4px;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+
+        /* DAY STATUS COLORS */
+        .day-free {
+            background: #d5f4e6;
+            color: #27ae60;
+        }
+
+        .day-blocked {
+            background: #fadbd8;
+            color: #e74c3c;
+        }
+
+        .day-reserved {
+            background: #e8daef;
+            color: #9b59b6;
+        }
+
+        .day-holiday {
+            background: #d6eaf8;
+            color: #3498db;
+        }
+
+        .day-status {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+        .day-label {
+            font-size: 12px;
+        }
+
+        /* TOOLTIP */
+        .tooltip {
+            position: absolute;
+            background: #2c3e50;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.5;
+            z-index: 1000;
+            display: none;
+            min-width: 200px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            pointer-events: none;
+            word-wrap: break-word;
+        }
+
+        .tooltip.show {
+            display: block;
+        }
+
+        /* LOADING STATE */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 400px;
+            font-size: 16px;
+            color: #95a5a6;
+        }
+
+        .spinner {
+            border: 3px solid rgba(22, 65, 148, 0.1);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .admin-sidebar {
+                width: 200px;
+            }
+
+            .admin-content {
+                margin-left: 200px;
+                padding: 20px;
+            }
+
+            .legend {
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                flex-direction: column;
+            }
+
+            .admin-sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 15px;
+            }
+
+            .admin-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+
+            .sidebar-nav {
+                flex-direction: row;
+                gap: 5px;
+            }
+
+            .sidebar-nav-item {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .admin-logo {
+                margin-bottom: 0;
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+            .sidebar-section {
+                display: none;
+            }
+
+            .page-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+            .calendar-table td {
+                height: 50px;
+                padding: 8px 5px;
+            }
+
+            .calendar-table th {
+                padding: 10px 5px;
+                font-size: 12px;
+            }
+
+            .cell-day {
+                font-size: 11px;
+                gap: 2px;
+            }
+
+            .day-label {
+                font-size: 10px;
+            }
+
+            .day-status {
+                font-size: 9px;
+            }
+        }
+
+        /* ALERT */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert.error {
+            background: #fadbd8;
+            color: #c0392b;
+            border-left: 4px solid #c0392b;
+        }
+
+        .alert.info {
+            background: #d6eaf8;
+            color: #2980b9;
+            border-left: 4px solid #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <div class="admin-sidebar">
+            <div class="admin-logo">
+                <div class="admin-logo-icon">⚙️</div>
+                <h2>Chaves Porto</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/frontend/dashboard.html" class="sidebar-nav-item" style="text-decoration: none;">
+                    <span>🏠</span> Início
+                </a>
+                <a href="/frontend/painel-ambientes.html" class="sidebar-nav-item" style="text-decoration: none;">
+                    <span>📊</span> Painel
+                </a>
+                <a href="/frontend/disponibilidade-ambientes.html" class="sidebar-nav-item active" style="text-decoration: none;">
+                    <span>📅</span> Disponibilidade
+                </a>
+                <a href="/frontend/reservar-chave.html" class="sidebar-nav-item" style="text-decoration: none;">
+                    <span>🔑</span> Reservar
+                </a>
+            </nav>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Admin</div>
+                <nav class="sidebar-nav">
+                    <a href="/frontend/admin-reservas.html" class="sidebar-nav-item" style="text-decoration: none;">
+                        <span>📋</span> Gerenciar
+                    </a>
+                    <button class="sidebar-nav-item" id="logoutBtn" style="background: transparent; border: none; cursor: pointer;">
+                        <span>🚪</span> Sair
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="admin-content">
+            <div class="page-container">
+                <!-- Header -->
+                <div class="page-header">
+                    <h1>📅 Disponibilidade de Ambientes</h1>
+                    <div class="header-actions">
+                        <a href="/frontend/reservar-chave.html" class="btn btn-secondary">
+                            🔑 Ir para Reservas
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Alert -->
+                <div id="alert" class="alert"></div>
+
+                <!-- Legend -->
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color color-free"></div>
+                        <span><strong>Verde:</strong> Ambiente livre</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color color-reserved"></div>
+                        <span><strong>Roxo:</strong> Ambiente reservado</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color color-blocked"></div>
+                        <span><strong>Vermelho:</strong> Bloqueado (domingo/manutenção)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color color-holiday"></div>
+                        <span><strong>Azul:</strong> Feriado</span>
+                    </div>
+                </div>
+
+                <!-- Calendar Navigation -->
+                <div class="calendar-header">
+                    <div class="calendar-title">Semana</div>
+                    <div class="calendar-nav">
+                        <button class="nav-btn" id="prevWeekBtn">← Semana Anterior</button>
+                        <div class="current-week" id="currentWeekDisplay">Carregando...</div>
+                        <button class="nav-btn" id="nextWeekBtn">Próxima Semana →</button>
+                    </div>
+                </div>
+
+                <!-- Calendar Table -->
+                <div class="calendar-container">
+                    <div id="loadingState" class="loading">
+                        <div class="spinner"></div>
+                        Carregando disponibilidade...
+                    </div>
+                    <table class="calendar-table" id="calendarTable" style="display: none;">
+                        <thead id="tableHead"></thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let currentWeekStart = getMonday(new Date());
+        let environments = [];
+        let reservations = [];
+        let blockouts = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🗓️ Inicializando disponibilidade de ambientes');
+            
+            // Check auth
+            checkAuth();
+            
+            // Load data and render
+            await loadCalendarData();
+            
+            // Event listeners
+            document.getElementById('prevWeekBtn').addEventListener('click', () => {
+                currentWeekStart = new Date(currentWeekStart);
+                currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+                loadCalendarData();
+            });
+
+            document.getElementById('nextWeekBtn').addEventListener('click', () => {
+                currentWeekStart = new Date(currentWeekStart);
+                currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+                loadCalendarData();
+            });
+
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+        });
+
+        function getMonday(d) {
+            d = new Date(d);
+            var day = d.getDay();
+            var diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        function checkAuth() {
+            const token = sessionStorage.getItem('userToken') || localStorage.getItem('userToken');
+            if (!token) {
+                // Se não autenticado, redirecionar para login (depende do seu fluxo)
+                console.warn('⚠️ Usuário não autenticado');
+            }
+        }
+
+        async function loadCalendarData() {
+            try {
+                const startDateStr = currentWeekStart.toISOString().split('T')[0];
+                console.log('📅 Carregando dados da semana:', startDateStr);
+
+                document.getElementById('loadingState').style.display = 'flex';
+                document.getElementById('calendarTable').style.display = 'none';
+
+                const response = await fetch(`${API_BASE}/environments/weekly-availability?startDate=${startDateStr}`);
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    environments = data.data.environments || [];
+                    reservations = data.data.reservations || [];
+                    blockouts = data.data.blockouts || [];
+                    
+                    console.log(`✅ Dados carregados: ${environments.length} ambientes, ${reservations.length} reservas, ${blockouts.length} bloqueios`);
+                    renderCalendar();
+                } else {
+                    throw new Error(data.message || 'Erro ao carregar dados');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar dados:', error);
+                showAlert('Erro ao carregar disponibilidade: ' + error.message, 'error');
+                document.getElementById('loadingState').style.display = 'none';
+            }
+        }
+
+        function renderCalendar() {
+            const weekEnd = new Date(currentWeekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            // Update week display
+            const formatDate = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+            document.getElementById('currentWeekDisplay').textContent = 
+                `${formatDate(currentWeekStart)} a ${formatDate(weekEnd)}`;
+
+            // Create headers
+            const thead = document.getElementById('tableHead');
+            thead.innerHTML = '';
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = '<th style="width: 180px;">Ambiente</th>';
+
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(date.getDate() + i);
+                const dayName = date.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase();
+                const dayNum = date.getDate();
+                headerRow.innerHTML += `<th><div style="font-size: 12px;">${dayName}</div><div style="font-size: 14px; font-weight: 700;">${dayNum}</div></th>`;
+            }
+            thead.appendChild(headerRow);
+
+            // Create body rows
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            if (environments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #95a5a6;">Nenhum ambiente disponível</td></tr>';
+                return;
+            }
+
+            environments.forEach(env => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${env.environment}</td>`;
+
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(currentWeekStart);
+                    date.setDate(date.getDate() + i);
+                    
+                    const dayStatus = getDayStatus(env.id, date);
+                    const cell = document.createElement('td');
+                    cell.innerHTML = `<div class="cell-day ${dayStatus.class}"><span class="day-label">${dayStatus.emoji}</span><span class="day-status">${dayStatus.text}</span></div>`;
+                    
+                    if (dayStatus.tooltip) {
+                        cell.title = dayStatus.tooltip;
+                        cell.style.cursor = 'help';
+                        cell.addEventListener('mouseenter', (e) => showTooltip(e, dayStatus.tooltip));
+                        cell.addEventListener('mouseleave', hideTooltip);
+                    }
+                    
+                    row.appendChild(cell);
+                }
+
+                tbody.appendChild(row);
+            });
+
+            // Show calendar
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('calendarTable').style.display = 'table';
+        }
+
+        function getDayStatus(envId, date) {
+            const dateStr = date.toISOString().split('T')[0];
+            const dayOfWeek = date.getDay();
+
+            // Check if Sunday (blocked)
+            if (dayOfWeek === 0) {
+                return {
+                    class: 'day-blocked',
+                    emoji: '🚫',
+                    text: 'Bloqueado',
+                    tooltip: 'Domingo - Ambiente bloqueado'
+                };
+            }
+
+            // Check if maintenance/blockout
+            const blockout = blockouts.find(b => 
+                b.environment_id === envId && 
+                dateStr >= b.start_date && 
+                dateStr <= b.end_date
+            );
+            
+            if (blockout) {
+                return {
+                    class: 'day-blocked',
+                    emoji: '🔧',
+                    text: 'Manutenção',
+                    tooltip: `Manutenção: ${blockout.reason || 'Sem motivo especificado'}`
+                };
+            }
+
+            // Check if has reservation
+            const reservation = reservations.find(r => 
+                r.key_id === envId && 
+                dateStr >= r.reservation_start_date && 
+                dateStr <= r.reservation_end_date
+            );
+
+            if (reservation) {
+                const instructorName = reservation.instructors?.name || 'N/A';
+                return {
+                    class: 'day-reserved',
+                    emoji: '📌',
+                    text: 'Reservado',
+                    tooltip: 
+                        `Instrutor: ${instructorName}\n` +
+                        `Status: ${getStatusLabel(reservation.status)}\n` +
+                        `Turma: ${reservation.turma || 'N/A'}`
+                };
+            }
+
+            // Free
+            return {
+                class: 'day-free',
+                emoji: '✅',
+                text: 'Livre',
+                tooltip: null
+            };
+        }
+
+        function getStatusLabel(status) {
+            const map = {
+                'pending': '⏳ Pendente',
+                'approved': '✅ Aprovada',
+                'rejected': '❌ Rejeitada'
+            };
+            return map[status] || status;
+        }
+
+        function showTooltip(event, text) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip show';
+            tooltip.textContent = text;
+            document.body.appendChild(tooltip);
+
+            const rect = event.target.getBoundingClientRect();
+            tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+            tooltip.style.left = (rect.left - tooltip.offsetWidth / 2 + rect.width / 2) + 'px';
+
+            // Prevent overflow
+            if (parseInt(tooltip.style.left) < 10) {
+                tooltip.style.left = '10px';
+            }
+        }
+
+        function hideTooltip() {
+            const tooltips = document.querySelectorAll('.tooltip');
+            tooltips.forEach(t => t.remove());
+        }
+
+        function showAlert(message, type = 'info') {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert show ${type}`;
+            setTimeout(() => alert.classList.remove('show'), 5000);
+        }
+
+        function logout() {
+            sessionStorage.removeItem('userToken');
+            localStorage.removeItem('userToken');
+            window.location.href = '/frontend/login.html';
+        }
+    </script>
+</body>
+</html>
