@@ -537,26 +537,32 @@
             </div>
 
             <nav class="sidebar-nav">
-                <a href="/dashboard" class="sidebar-nav-item" style="text-decoration: none;">
-                    <span>🏠</span> Início
+                <a href="/admin" class="sidebar-nav-item" style="text-decoration: none;">
+                    <span>📊</span> Dashboard
                 </a>
-                <a href="/painel" class="sidebar-nav-item" style="text-decoration: none;">
-                    <span>📊</span> Painel
+                <a href="/admin?section=keys" class="sidebar-nav-item" style="text-decoration: none;">
+                    <span>🔑</span> Chaves
+                </a>
+                <a href="/admin?section=instructors" class="sidebar-nav-item" style="text-decoration: none;">
+                    <span>👥</span> Instrutores
+                </a>
+                <a href="/admin?section=history" class="sidebar-nav-item" style="text-decoration: none;">
+                    <span>📋</span> Histórico
+                </a>
+                <a href="/admin-reservas" class="sidebar-nav-item" style="text-decoration: none;">
+                    <span>📅</span> Reservas
+                </a>
+                <a href="/admin-blockouts" class="sidebar-nav-item" style="text-decoration: none;">
+                    <span>🔒</span> Bloqueios
                 </a>
                 <a href="/disponibilidade" class="sidebar-nav-item active" style="text-decoration: none;">
-                    <span>📅</span> Disponibilidade
-                </a>
-                <a href="/reservar-chave" class="sidebar-nav-item" style="text-decoration: none;">
-                    <span>🔑</span> Reservar
+                    <span>📊</span> Disponibilidade
                 </a>
             </nav>
 
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Admin</div>
+                <div class="sidebar-section-title">Conta</div>
                 <nav class="sidebar-nav">
-                    <a href="/admin-reservas" class="sidebar-nav-item" style="text-decoration: none;">
-                        <span>📋</span> Gerenciar
-                    </a>
                     <button class="sidebar-nav-item" id="logoutBtn" style="background: transparent; border: none; cursor: pointer;">
                         <span>🚪</span> Sair
                     </button>
