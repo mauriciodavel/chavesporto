@@ -926,14 +926,18 @@
                     console.log('🔍 Reservas de Lab-01:', lab01Reservations);
                     
                     if (blockouts.length > 0) {
-                        console.log('🔧 Bloqueios carregados:', blockouts.map(b => ({ 
-                            env: b.environment_id, 
+                        console.log('🔧 Bloqueios carregados (COMPLETO):', blockouts);
+                        console.log('🔧 Bloqueios resumo:', blockouts.map(b => ({ 
+                            environment_id: b.environment_id,
                             start: b.start_date, 
                             end: b.end_date,
                             type: b.type,
-                            reason: b.reason 
+                            reason: b.reason,
+                            shift: b.shift
                         })));
                     }
+                    
+                    console.log('🏛️ Ambientes carregados:', environments.map(e => ({ id: e.id, name: e.environment })));
                     renderEnvironmentFilter();  // Generate environment checkboxes
                     renderCalendar();
                 } else {
@@ -1073,6 +1077,12 @@
                         const blockout = blockouts.find(b => {
                             const dateMatches = dayDateStr >= b.start_date && dayDateStr <= b.end_date;
                             const envMatches = !b.environment_id || b.environment_id === env.id;  // undefined = aplica a todos
+                            
+                            // Debug: Log cada comparação no dia 10/04/2026
+                            if (dayDateStr === '2026-04-10') {
+                                console.log(`   🔍 Bloqueio check: env.id=${env.id}, b.environment_id=${b.environment_id}, dateMatches=${dateMatches}, envMatches=${envMatches}`);
+                            }
+                            
                             return dateMatches && envMatches;
                         });
                         if (blockout) {
@@ -1185,6 +1195,12 @@
                 const dateMatches = dateStr >= b.start_date && dateStr <= b.end_date;
                 const envMatches = !b.environment_id || b.environment_id === envId;  // null = todos os ambientes
                 const shiftMatches = !b.shift || b.shift === shift;  // null = todos os turnos
+                
+                // Debug dia 10/04/2026
+                if (dateStr === '2026-04-10') {
+                    console.log(`   💬 getDayShiftStatus check: envId=${envId}, b.env_id=${b.environment_id}, dateMatches=${dateMatches}, envMatches=${envMatches}, shiftMatches=${shiftMatches}`);
+                }
+                
                 return dateMatches && envMatches && shiftMatches;
             });
             
