@@ -33,6 +33,50 @@ class BlockoutController {
   }
 
   /**
+   * GET /api/blockouts/debug/all
+   * Debug: Listar TODOS os bloqueios brutos da tabela (desabilitado em produção)
+   */
+  async debugAllBlockouts(req, res) {
+    try {
+      console.log('🔍 DEBUG: Buscando todos os bloqueios brutos...');
+      
+      const { data, error } = await supabase
+        .from('calendar_blockouts')
+        .select('*')
+        .order('blockout_start_date', { ascending: true });
+
+      if (error) {
+        console.error('❌ Erro ao buscar:', error);
+        throw error;
+      }
+
+      console.log(`✅ Total de bloqueios encontrados: ${data?.length || 0}`);
+      
+      if (data && data.length > 0) {
+        console.log('📋 Bloqueios em formato JSON:');
+        console.log(JSON.stringify(data.slice(0, 5), null, 2));
+      }
+
+      return res.json({
+        success: true,
+        count: data?.length || 0,
+        data: data || [],
+        debug: {
+          timestamp: new Date().toISOString(),
+          message: 'Todos os bloqueios brutos da tabela, incluindo deletados'
+        }
+      });
+    } catch (error) {
+      console.error('❌ Erro ao buscar bloqueios:', error.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Erro ao listar bloqueios',
+        error: error.message
+      });
+    }
+  }
+
+  /**
    * GET /api/blockouts/date/:date
    * Verificar bloqueios para uma data específica
    * Query params: ?shift=matutino (opcional)

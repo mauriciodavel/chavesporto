@@ -12,6 +12,13 @@ const auth = require('../middleware/auth');
 router.get('/', blockoutController.getAllBlockouts);
 
 /**
+ * @route GET /api/blockouts/debug/all
+ * @desc DEBUG: Listar todos os bloqueios brutos (inclusive deletados)
+ * @access Public
+ */
+router.get('/debug/all', blockoutController.debugAllBlockouts);
+
+/**
  * @route GET /api/blockouts/color-map
  * @desc Obter mapa de cores padrão
  * @access Public
