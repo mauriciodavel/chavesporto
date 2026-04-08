@@ -181,6 +181,54 @@
             background: #d43810;
         }
 
+        /* SHIFT FILTER */
+        .shift-filter {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .shift-filter-label {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 14px;
+        }
+
+        .shift-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .shift-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--primary-color);
+            background: white;
+            color: var(--primary-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .shift-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .shift-btn.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
         /* LEGEND */
         .legend {
             background: white;
@@ -583,11 +631,19 @@
                     </div>
                 </div>
 
-                <!-- Alert -->
-                <div id="alert" class="alert"></div>
+                <!-- Shift Filter -->
+                <div class="shift-filter">
+                    <span class="shift-filter-label">🕐 Filtrar por Turno:</span>
+                    <div class="shift-buttons">
+                        <button class="shift-btn active" data-shift="all">Todos</button>
+                        <button class="shift-btn" data-shift="matutino">🌅 Matutino (7:30-11:30)</button>
+                        <button class="shift-btn" data-shift="vespertino">☀️ Vespertino (13:30-17:30)</button>
+                        <button class="shift-btn" data-shift="noturno">🌙 Noturno (18:30-22:00)</button>
+                        <button class="shift-btn" data-shift="integral">📅 Integral (08:00-17:00)</button>
+                    </div>
+                </div>
 
                 <!-- Legend -->
-                <div class="legend">
                     <div class="legend-item">
                         <div class="legend-color color-free"></div>
                         <span><strong>Verde:</strong> Ambiente livre</span>
@@ -637,6 +693,7 @@
         let environments = [];
         let reservations = [];
         let blockouts = [];
+        let selectedShift = 'all';  // 'all', 'matutino', 'vespertino', 'noturno', 'integral'
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -644,6 +701,17 @@
             
             // Check auth
             checkAuth();
+            
+            // Setup shift filter buttons
+            document.querySelectorAll('.shift-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedShift = btn.dataset.shift;
+                    console.log('🕐 Turno selecionado:', selectedShift);
+                    renderCalendar();
+                });
+            });
             
             // Load data and render
             await loadCalendarData();
@@ -804,7 +872,15 @@
             }
 
             // Check if has reservation
-            const reservation = reservations.find(r => 
+            const filteredReservations = reservations.filter(r => {
+                // Filtrar por turno selecionado
+                if (selectedShift !== 'all' && r.shift !== selectedShift) {
+                    return false;
+                }
+                return true;
+            });
+
+            const reservation = filteredReservations.find(r => 
                 r.key_id === envId && 
                 dateStr >= r.reservation_start_date && 
                 dateStr <= r.reservation_end_date
@@ -818,6 +894,7 @@
                     text: 'Reservado',
                     tooltip: 
                         `Instrutor: ${instructorName}\n` +
+                        `Turno: ${getShiftLabel(reservation.shift)}\n` +
                         `Status: ${getStatusLabel(reservation.status)}\n` +
                         `Turma: ${reservation.turma || 'N/A'}`
                 };
@@ -839,6 +916,16 @@
                 'rejected': '❌ Rejeitada'
             };
             return map[status] || status;
+        }
+
+        function getShiftLabel(shift) {
+            const map = {
+                'matutino': '🌅 Matutino (7:30-11:30)',
+                'vespertino': '☀️ Vespertino (13:30-17:30)',
+                'noturno': '🌙 Noturno (18:30-22:00)',
+                'integral': '📅 Integral (08:00-17:00)'
+            };
+            return map[shift] || shift;
         }
 
         function showTooltip(event, text) {
