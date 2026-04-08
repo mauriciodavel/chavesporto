@@ -201,6 +201,7 @@ exports.getWeeklyAvailability = async (req, res) => {
           
           return {
             id: b.id,
+            key_id: b.key_id,  // ✅ IMPORTANTE: Incluir key_id para filtrar por ambiente
             start_date: b.reservation_start_date,
             end_date: b.reservation_end_date,
             reason: reasonLabel,

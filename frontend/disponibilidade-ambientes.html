@@ -1073,16 +1073,12 @@
                     if (dayOfWeek === 0) {
                         blockoutInfo = '🚫 Domingo - Ambiente bloqueado';
                     } else {
-                        // Bloqueios podem ser globais (!b.environment_id) ou específicos de um ambiente
+                        // Bloqueios podem ser:
+                        // - De calendar_blockouts: globais (sem key_id) ou específicos (com key_id)
+                        // - De key_reservations: sempre específicos (com key_id)
                         const blockout = blockouts.find(b => {
                             const dateMatches = dayDateStr >= b.start_date && dayDateStr <= b.end_date;
-                            const envMatches = !b.environment_id || b.environment_id === env.id;  // undefined = aplica a todos
-                            
-                            // Debug: Log cada comparação no dia 10/04/2026
-                            if (dayDateStr === '2026-04-10') {
-                                console.log(`   🔍 Bloqueio check: env.id=${env.id}, b.environment_id=${b.environment_id}, dateMatches=${dateMatches}, envMatches=${envMatches}`);
-                            }
-                            
+                            const envMatches = !b.key_id || b.key_id === env.id;  // undefined = aplica a todos
                             return dateMatches && envMatches;
                         });
                         if (blockout) {
@@ -1189,18 +1185,12 @@
 
             // Check if maintenance/blockout
             // Bloqueios podem ter:
-            // - environment_id: null/undefined (aplica a todos) ou ID específico
+            // - key_id: null/undefined (aplica a todos) ou ID específico do ambiente
             // - shift: null/undefined (aplica a todos os turnos) ou shift específico
             const blockout = blockouts.find(b => {
                 const dateMatches = dateStr >= b.start_date && dateStr <= b.end_date;
-                const envMatches = !b.environment_id || b.environment_id === envId;  // null = todos os ambientes
+                const envMatches = !b.key_id || b.key_id === envId;  // null = todos os ambientes
                 const shiftMatches = !b.shift || b.shift === shift;  // null = todos os turnos
-                
-                // Debug dia 10/04/2026
-                if (dateStr === '2026-04-10') {
-                    console.log(`   💬 getDayShiftStatus check: envId=${envId}, b.env_id=${b.environment_id}, dateMatches=${dateMatches}, envMatches=${envMatches}, shiftMatches=${shiftMatches}`);
-                }
-                
                 return dateMatches && envMatches && shiftMatches;
             });
             
