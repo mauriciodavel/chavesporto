@@ -180,6 +180,13 @@ exports.getWeeklyAvailability = async (req, res) => {
       } else {
         console.log(`🔒 [KEY BLOCKOUTS] Total de bloqueios em key_reservations: ${keyBlockouts?.length || 0}`);
         
+        // Mapeamento de tipos para português
+        const blockoutTypeLabels = {
+          'maintenance': 'Manutenção de Ambiente',
+          'internal_event': 'Evento Interno',
+          'external_event': 'Evento Externo'
+        };
+        
         // Mapear bloqueios de key_reservations
         const mappedKeyBlockouts = (keyBlockouts || []).map(b => {
           // Extrair tipo de bloqueio do campo turma (ex: "BLOQUEIO: maintenance")
@@ -189,11 +196,14 @@ exports.getWeeklyAvailability = async (req, res) => {
             blockoutType = typeStr;
           }
           
+          // Usar label em português para o reason
+          const reasonLabel = blockoutTypeLabels[blockoutType] || 'Bloqueio de Ambiente';
+          
           return {
             id: b.id,
             start_date: b.reservation_start_date,
             end_date: b.reservation_end_date,
-            reason: b.turma || 'Bloqueio de ambiente',
+            reason: reasonLabel,
             shift: b.shift,
             type: blockoutType,
             isKeyBlockout: true

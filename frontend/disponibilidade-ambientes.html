@@ -684,7 +684,6 @@
                         <button class="shift-btn active" data-shift="all">Todos</button>
                         <button class="shift-btn" data-shift="matutino">🌅 Matutino (7:30-11:30)</button>
                         <button class="shift-btn" data-shift="vespertino">☀️ Vespertino (13:30-17:30)</button>
-                        <button class="shift-btn" data-shift="noturno">🌙 Noturno (18:30-22:00)</button>
                         <button class="shift-btn" data-shift="integral">📅 Integral (08:00-17:00)</button>
                     </div>
                 </div>
@@ -1099,67 +1098,123 @@
 
         function renderEnvironmentFilter() {
             const container = document.getElementById('environmentButtons');
+            container.innerHTML = '';
             
-            // Create select/combobox
-            const select = document.createElement('select');
-            select.id = 'environmentSelect';
-            select.multiple = true;
-            select.style.padding = '8px 12px';
-            select.style.border = '2px solid var(--primary-color)';
-            select.style.borderRadius = '6px';
-            select.style.cursor = 'pointer';
-            select.style.fontSize = '13px';
-            select.style.fontWeight = '600';
-            select.style.color = 'var(--primary-color)';
-            select.style.backgroundColor = 'white';
-            select.style.minWidth = '200px';
-            select.style.maxHeight = '150px';
-            select.style.fontFamily = 'inherit';
+            // Create dropdown button
+            const dropdownBtn = document.createElement('button');
+            dropdownBtn.id = 'environmentDropdownBtn';
+            dropdownBtn.textContent = '🏛️ Ambientes ▼';
+            dropdownBtn.style.padding = '8px 12px';
+            dropdownBtn.style.border = '2px solid var(--primary-color)';
+            dropdownBtn.style.borderRadius = '6px';
+            dropdownBtn.style.cursor = 'pointer';
+            dropdownBtn.style.fontSize = '13px';
+            dropdownBtn.style.fontWeight = '600';
+            dropdownBtn.style.color = 'white';
+            dropdownBtn.style.backgroundColor = 'var(--primary-color)';
+            dropdownBtn.style.fontFamily = 'inherit';
             
-            // Add "Todos" option
-            const todosOption = document.createElement('option');
-            todosOption.value = 'all';
-            todosOption.textContent = '✓ Todos';
-            todosOption.selected = true;
-            select.appendChild(todosOption);
+            // Create dropdown menu (hidden by default)
+            const dropdownMenu = document.createElement('div');
+            dropdownMenu.id = 'environmentDropdownMenu';
+            dropdownMenu.style.position = 'absolute';
+            dropdownMenu.style.display = 'none';
+            dropdownMenu.style.backgroundColor = 'white';
+            dropdownMenu.style.border = '2px solid var(--primary-color)';
+            dropdownMenu.style.borderRadius = '6px';
+            dropdownMenu.style.padding = '8px';
+            dropdownMenu.style.marginTop = '4px';
+            dropdownMenu.style.minWidth = '200px';
+            dropdownMenu.style.maxHeight = '200px';
+            dropdownMenu.style.overflowY = 'auto';
+            dropdownMenu.style.zIndex = '1000';
+            dropdownMenu.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+
+            // Add "Todos" checkbox
+            const todosLabel = document.createElement('label');
+            todosLabel.style.display = 'block';
+            todosLabel.style.padding = '5px';
+            todosLabel.style.cursor = 'pointer';
+            todosLabel.style.userSelect = 'none';
+            
+            const todosCheckbox = document.createElement('input');
+            todosCheckbox.type = 'checkbox';
+            todosCheckbox.value = 'all';
+            todosCheckbox.checked = true;
+            todosLabel.appendChild(todosCheckbox);
+            todosLabel.appendChild(document.createTextNode(' ✓ Todos'));
+            dropdownMenu.appendChild(todosLabel);
             
             // Add separator
-            if (environments.length > 0) {
-                const separator = document.createElement('option');
-                separator.disabled = true;
-                separator.textContent = '─────────────';
-                select.appendChild(separator);
-            }
-            
-            // Add environment options
+            const separator = document.createElement('hr');
+            separator.style.margin = '5px 0';
+            separator.style.border = 'none';
+            separator.style.borderTop = '1px solid #ddd';
+            dropdownMenu.appendChild(separator);
+
+            // Add environment checkboxes
             environments.forEach(env => {
-                const option = document.createElement('option');
-                option.value = env.id;
-                option.textContent = env.environment || `Ambiente ${env.id}`;
-                select.appendChild(option);
+                const label = document.createElement('label');
+                label.style.display = 'block';
+                label.style.padding = '5px';
+                label.style.cursor = 'pointer';
+                label.style.userSelect = 'none';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = env.id;
+                checkbox.className = 'env-checkbox';
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(` ${env.environment || `Ambiente ${env.id}`}`));
+                dropdownMenu.appendChild(label);
             });
-            
-            // Handle change events
-            select.addEventListener('change', () => {
-                selectedEnvironments.clear();
-                
-                // Check if "Todos" is selected
-                const isTodosSelected = Array.from(select.selectedOptions).some(opt => opt.value === 'all');
-                
-                if (!isTodosSelected) {
-                    // If specific environments are selected, add them to set
-                    Array.from(select.selectedOptions).forEach(opt => {
-                        if (opt.value !== 'all') {
-                            selectedEnvironments.add(opt.value);
-                        }
-                    });
+
+            // Event handlers
+            dropdownBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isHidden = dropdownMenu.style.display === 'none';
+                dropdownMenu.style.display = isHidden ? 'block' : 'none';
+            });
+
+            // Handle checkbox changes
+            const allCheckboxes = dropdownMenu.querySelectorAll('input[type="checkbox"]');
+            allCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const todosCheckbox = dropdownMenu.querySelector('input[value="all"]');
+                    const envCheckboxes = Array.from(dropdownMenu.querySelectorAll('.env-checkbox'));
+                    
+                    selectedEnvironments.clear();
+                    
+                    if (todosCheckbox.checked) {
+                        // Se "Todos" está marcado, não adiciona nada ao set (mostra todos)
+                    } else {
+                        // Adicionar ambientes selecionados
+                        envCheckboxes.forEach(cb => {
+                            if (cb.checked) {
+                                selectedEnvironments.add(cb.value);
+                            }
+                        });
+                    }
+                    
+                    renderCalendar();
+                });
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                    dropdownMenu.style.display = 'none';
                 }
-                
-                renderCalendar();
             });
+
+            // Create wrapper with relative positioning
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'relative';
+            wrapper.style.display = 'inline-block';
+            wrapper.appendChild(dropdownBtn);
+            wrapper.appendChild(dropdownMenu);
             
-            container.innerHTML = '';
-            container.appendChild(select);
+            container.appendChild(wrapper);
         }
 
         function getStatusLabel(status) {
@@ -1175,7 +1230,6 @@
             const map = {
                 'matutino': '🌅 Matutino (7:30-11:30)',
                 'vespertino': '☀️ Vespertino (13:30-17:30)',
-                'noturno': '🌙 Noturno (18:30-22:00)',
                 'integral': '📅 Integral (08:00-17:00)'
             };
             return map[shift] || shift;
