@@ -196,6 +196,8 @@ exports.getWeeklyAvailability = async (req, res) => {
             blockoutType = typeStr;
           }
           
+          console.log(`🔍 DEBUG Bloqueio: turma="${b.turma}", tipo extraído="${blockoutType}", key_id=${b.key_id}, data=${b.reservation_start_date}`);
+          
           // Usar label em português para o reason
           const reasonLabel = blockoutTypeLabels[blockoutType] || 'Bloqueio de Ambiente';
           

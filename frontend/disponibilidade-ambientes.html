@@ -928,7 +928,7 @@
                     if (blockouts.length > 0) {
                         console.log('🔧 Bloqueios carregados (COMPLETO):', blockouts);
                         console.log('🔧 Bloqueios resumo:', blockouts.map(b => ({ 
-                            environment_id: b.environment_id,
+                            key_id: b.key_id,
                             start: b.start_date, 
                             end: b.end_date,
                             type: b.type,
@@ -1079,7 +1079,14 @@
                         const blockout = blockouts.find(b => {
                             const dateMatches = dayDateStr >= b.start_date && dayDateStr <= b.end_date;
                             const envMatches = !b.key_id || b.key_id === env.id;  // undefined = aplica a todos
-                            return dateMatches && envMatches;
+                            const match = dateMatches && envMatches;
+                            
+                            // Debug: Log cada bloqueio encontrado no dia 10/04/2026
+                            if (dayDateStr === '2026-04-10') {
+                                console.log(`   🔍 Bloqueio check: dateMatches=${dateMatches}, env.id=${env.id}, b.key_id=${b.key_id}, envMatches=${envMatches}, type=${b.type}, match=${match}`);
+                            }
+                            
+                            return match;
                         });
                         if (blockout) {
                             const blockoutLabel = getBlockoutTypeLabel(blockout.type);
@@ -1191,6 +1198,12 @@
                 const dateMatches = dateStr >= b.start_date && dateStr <= b.end_date;
                 const envMatches = !b.key_id || b.key_id === envId;  // null = todos os ambientes
                 const shiftMatches = !b.shift || b.shift === shift;  // null = todos os turnos
+                
+                // Debug: Log para 2026-04-10
+                if (dateStr === '2026-04-10' && envId.includes('Lab')) {
+                    console.log(`   💬 getDayShiftStatus: dateMatches=${dateMatches}, envMatches=${envMatches}, shiftMatches=${shiftMatches}, b.shift=${b.shift}, shift param=${shift}, b.type=${b.type}`);
+                }
+                
                 return dateMatches && envMatches && shiftMatches;
             });
             
