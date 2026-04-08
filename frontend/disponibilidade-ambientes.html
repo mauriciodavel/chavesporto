@@ -800,6 +800,9 @@
                     </div>
                 </div>
 
+                <!-- Alert -->
+                <div id="alert" class="alert"></div>
+
                 <!-- Calendar Navigation -->
                 <div class="calendar-header">
                     <div class="calendar-title">Semana</div>
@@ -1081,14 +1084,6 @@
                     // Build tooltip with both blockout and reservations
                     if (blockoutInfo) {
                         dayTooltip = blockoutInfo;
-                        
-                        // Debug log for blockout
-                        if (dayDateStr === '2026-04-10') {
-                            console.log(`🔒 Blockout encontrado em ${dayDateStr}:`, {
-                                blockout: blockout,
-                                blockoutLabel: getBlockoutTypeLabel(blockout.type)
-                            });
-                        }
                     }
                     
                     if (dayReservations.length > 0) {
@@ -1405,9 +1400,13 @@
 
         function showAlert(message, type = 'info') {
             const alert = document.getElementById('alert');
-            alert.textContent = message;
-            alert.className = `alert show ${type}`;
-            setTimeout(() => alert.classList.remove('show'), 5000);
+            if (alert) {
+                alert.textContent = message;
+                alert.className = `alert show ${type}`;
+                setTimeout(() => alert.classList.remove('show'), 5000);
+            } else {
+                console.error('Alert:', message);
+            }
         }
 
         function logout() {
