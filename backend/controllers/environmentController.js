@@ -155,7 +155,8 @@ exports.getWeeklyAvailability = async (req, res) => {
             start_date: b.blockout_start_date,
             end_date: b.blockout_end_date,
             reason: b.observation || b.blockout_type,
-            shift: b.shift
+            shift: b.shift,
+            type: b.blockout_type  // Adicionar tipo para exibição correta no frontend
           }));
         
         console.log(`✅ [BLOCKOUTS] Bloqueios após filtro: ${blockouts.length} encontrados para semana ${startStr} a ${endStr}`);

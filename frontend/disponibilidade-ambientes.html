@@ -1003,6 +1003,18 @@
             document.getElementById('calendarTable').style.display = 'table';
         }
 
+        function getBlockoutTypeLabel(blockoutType) {
+            const types = {
+                'maintenance': { emoji: '🔧', text: 'M' },
+                'internal_event': { emoji: '📚', text: 'EI' },
+                'external_event': { emoji: '🎪', text: 'EE' },
+                'national_holiday': { emoji: '🇧🇷', text: 'FN' },
+                'state_holiday': { emoji: '🏛️', text: 'FE' },
+                'municipal_holiday': { emoji: '🏢', text: 'FM' }
+            };
+            return types[blockoutType] || { emoji: '🔒', text: 'BL' };
+        }
+
         function getDayShiftStatus(envId, date, shift) {
             const dateStr = formatDateLocal(date);
             const dayOfWeek = date.getDay();
@@ -1025,10 +1037,11 @@
             });
             
             if (blockout) {
+                const blockoutLabel = getBlockoutTypeLabel(blockout.type);
                 return {
                     class: 'day-blocked',
-                    emoji: '🔧',
-                    text: 'M'
+                    emoji: blockoutLabel.emoji,
+                    text: blockoutLabel.text
                 };
             }
 
