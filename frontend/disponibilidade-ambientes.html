@@ -1055,64 +1055,7 @@
                         dayDateStr <= r.reservation_end_date
                     );
                     
-                    // Debug log for Lab-01 on 2026-04-10
-                    if (env.environment === 'Lab-01 - Prototipar' && dayDateStr === '2026-04-10') {
-                        console.log(`🔍 DEBUG Lab-01 em 2026-04-10:`, {
-                            envId: env.id,
-                            dayDateStr: dayDateStr,
-                            allReservations: reservations.filter(r => dayDateStr >= r.reservation_start_date && dayDateStr <= r.reservation_end_date),
-                            filteredByEnv: dayReservations
-                        });
-                    }
-                    
-                    // Get tooltip from all reservations
-                    let dayTooltip = '';
-                    
-                    // Check for blockout/maintenance first
-                    let blockoutInfo = null;
-                    if (dayOfWeek === 0) {
-                        blockoutInfo = '🚫 Domingo - Ambiente bloqueado';
-                    } else {
-                        // Bloqueios podem ser:
-                        // - De calendar_blockouts: globais (sem key_id) ou específicos (com key_id)
-                        // - De key_reservations: sempre específicos (com key_id)
-                        const blockout = blockouts.find(b => {
-                            const dateMatches = dayDateStr >= b.start_date && dayDateStr <= b.end_date;
-                            const envMatches = !b.key_id || b.key_id === env.id;  // undefined = aplica a todos
-                            const match = dateMatches && envMatches;
-                            
-                            // Debug: Log cada bloqueio encontrado no dia 10/04/2026
-                            if (dayDateStr === '2026-04-10') {
-                                console.log(`   🔍 Bloqueio check: dateMatches=${dateMatches}, env.id=${env.id}, b.key_id=${b.key_id}, envMatches=${envMatches}, type=${b.type}, match=${match}`);
-                            }
-                            
-                            return match;
-                        });
-                        if (blockout) {
-                            const blockoutLabel = getBlockoutTypeLabel(blockout.type);
-                            const shiftInfo = blockout.shift ? ` (${blockout.shift})` : '';
-                            blockoutInfo = `${blockoutLabel.emoji} ${blockoutLabel.label}${shiftInfo}\n${blockout.reason || 'Sem motivo especificado'}`;
-                        }
-                    }
-                    
-                    // Build tooltip with both blockout and reservations
-                    if (blockoutInfo) {
-                        dayTooltip = blockoutInfo;
-                    }
-                    
-                    if (dayReservations.length > 0) {
-                        const reservationTooltip = dayReservations.map(r => {
-                            const instructorName = r.instructors?.name || 'N/A';
-                            return `📌 ${getShiftLabel(r.shift)}\nInstrutor: ${instructorName}\nTurma: ${r.turma || 'N/A'}\nStatus: ${getStatusLabel(r.status)}`;
-                        }).join('\n\n');
-                        
-                        // If there's already blockout info, combine them
-                        if (blockoutInfo) {
-                            dayTooltip = `${blockoutInfo}\n\n═════════════════════\nRESERVAÇÕES TAMBÉM:\n═════════════════════\n${reservationTooltip}`;
-                        } else {
-                            dayTooltip = reservationTooltip;
-                        }
-                    }
+
                     
                     // Render 3 shift cells
                     let shifts = ['matutino', 'vespertino', 'noturno'];
@@ -1130,6 +1073,48 @@
                             console.log(`📊 Status ${shift} - ${env.environment}:`, shiftStatus);
                         }
                         
+                        // Build shift-specific tooltip
+                        let shiftTooltip = '';
+                        
+                        if (dayOfWeek === 0) {
+                            shiftTooltip = '🚫 Domingo - Ambiente bloqueado';
+                        } else {
+                            // Find blockout specific to this shift
+                            const blockout = blockouts.find(b => {
+                                const dateMatches = dayDateStr >= b.start_date && dayDateStr <= b.end_date;
+                                const envMatches = !b.key_id || b.key_id === env.id;
+                                const shiftMatches = !b.shift || b.shift === shift;
+                                return dateMatches && envMatches && shiftMatches;
+                            });
+                            
+                            if (blockout) {
+                                const blockoutLabel = getBlockoutTypeLabel(blockout.type);
+                                shiftTooltip = `${blockoutLabel.emoji} ${blockoutLabel.label}\n${blockout.reason || 'Sem motivo especificado'}`;
+                                
+                                // Debug log
+                                if (dayDateStr === '2026-04-10') {
+                                    console.log(`   ✅ Blockout for ${shift}: type=${blockout.type}, label=${blockoutLabel.label}`);
+                                }
+                            }
+                        }
+                        
+                        // Add reservations if no blockout
+                        if (!shiftTooltip) {
+                            const shiftReservations = dayReservations.filter(r => {
+                                if (r.shift === 'integral') {
+                                    return shift === 'matutino' || shift === 'vespertino';
+                                }
+                                return r.shift === shift;
+                            });
+                            
+                            if (shiftReservations.length > 0) {
+                                shiftTooltip = shiftReservations.map(r => {
+                                    const instructorName = r.instructors?.name || 'N/A';
+                                    return `📌 ${getShiftLabel(r.shift)}\nInstrutor: ${instructorName}\nTurma: ${r.turma || 'N/A'}\nStatus: ${getStatusLabel(r.status)}`;
+                                }).join('\n\n');
+                            }
+                        }
+                        
                         const shiftCell = document.createElement('div');
                         shiftCell.className = `shift-cell ${shiftStatus.class}`;
                         
@@ -1143,10 +1128,10 @@
                         const shiftHtml = `<span class="day-label">${shiftStatus.emoji}</span><span class="day-status">${shiftStatus.text}</span>`;
                         shiftCell.innerHTML = shiftHtml;
                         
-                        if (dayTooltip) {
-                            shiftCell.title = dayTooltip;
+                        if (shiftTooltip) {
+                            shiftCell.title = shiftTooltip;
                             shiftCell.style.cursor = 'help';
-                            shiftCell.addEventListener('mouseenter', (e) => showTooltip(e, dayTooltip));
+                            shiftCell.addEventListener('mouseenter', (e) => showTooltip(e, shiftTooltip));
                             shiftCell.addEventListener('mouseleave', hideTooltip);
                         }
                         
