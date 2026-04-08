@@ -64,16 +64,29 @@ exports.getWeeklyAvailability = async (req, res) => {
     const startStr = start.toISOString().split('T')[0];
     const endStr = end.toISOString().split('T')[0];
 
+    // Validar datas
+    if (!startStr || !endStr || startStr === 'Invalid Date' || endStr === 'Invalid Date') {
+      console.error('❌ Datas inválidas:', { startStr, endStr });
+      return res.status(400).json({
+        success: false,
+        message: 'Data inválida',
+        debug: { startDate, startStr, endStr }
+      });
+    }
+
+    console.log('✅ Datas formatadas:', { startStr, endStr });
+
     // Get all keys
     const { data: keys, error: keysError } = await supabase
       .from('keys')
       .select('id, environment, location, description')
-      .eq('deleted_at', null)
+      .is('deleted_at', null)
       .order('environment', { ascending: true });
 
     if (keysError) throw keysError;
 
     // Get active reservations for the week
+    console.log('📋 Buscando reservas...');
     const { data: reservations, error: resError } = await supabase
       .from('key_reservations')
       .select(`
@@ -87,28 +100,60 @@ exports.getWeeklyAvailability = async (req, res) => {
         status,
         instructors!instructor_id (id, name)
       `)
-      .eq('status', 'approved')
-      .lte('reservation_start_date', endStr)
-      .gte('reservation_end_date', startStr);
+      .eq('status', 'approved');
 
-    if (resError) throw resError;
+    if (resError) {
+      console.error('❌ Erro ao buscar reservas:', resError);
+      throw resError;
+    }
+
+    // Filtrar em JavaScript em vez de Supabase
+    const filteredReservations = (reservations || []).filter(r => {
+      if (!r.reservation_start_date || !r.reservation_end_date) return false;
+      const rStart = new Date(r.reservation_start_date);
+      const rEnd = new Date(r.reservation_end_date);
+      const weekStart = new Date(startStr);
+      const weekEnd = new Date(endStr);
+      return rStart <= weekEnd && rEnd >= weekStart;
+    });
+
+    console.log(`📋 Found ${reservations?.length} total reservations, ${filteredReservations.length} in this week`);
 
     // Get blockouts for the week (maintenance, etc)
-    const { data: blockouts, error: blockoutsError } = await supabase
-      .from('environment_maintenance')
-      .select('id, environment_id, start_date, end_date, reason')
-      .lte('start_date', endStr)
-      .gte('end_date', startStr);
+    console.log('🔒 Buscando bloqueios com filtros:', { endStr, startStr });
+    let blockouts = [];
+    
+    // Tentar buscar bloqueios de forma segura
+    try {
+      const { data: blockoutsData, error: blockoutsError } = await supabase
+        .from('environment_maintenance')
+        .select('id, environment_id, start_date, end_date, reason');
+      
+      if (blockoutsError) {
+        console.warn('⚠️  Aviso ao buscar bloqueios:', blockoutsError.message);
+        blockouts = [];
+      } else {
+        // Filtrar em JavaScript em vez de usar o Supabase
+        blockouts = (blockoutsData || []).filter(b => {
+          const bStart = new Date(b.start_date);
+          const bEnd = new Date(b.end_date);
+          const weekStart = new Date(startStr);
+          const weekEnd = new Date(endStr);
+          return bStart <= weekEnd && bEnd >= weekStart;
+        });
+      }
+    } catch (err) {
+      console.warn('⚠️  Erro ao buscar bloqueios (tabela pode não existir):', err.message);
+      blockouts = [];
+    }
 
-    if (blockoutsError) throw blockoutsError;
-
-    console.log(`✅ Dados carregados: ${keys?.length} ambientes, ${reservations?.length} reservas, ${blockouts?.length} bloqueios`);
+    console.log(`✅ Dados carregados: ${keys?.length} ambientes, ${filteredReservations.length} reservas, ${blockouts.length} bloqueios`);
 
     return res.status(200).json({
       success: true,
       data: {
         environments: keys || [],
-        reservations: reservations || [],
+        reservations: filteredReservations || [],
         blockouts: blockouts || [],
         weekStart: startStr,
         weekEnd: endStr

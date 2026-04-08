@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Disponibilidade de Ambientes - Chavesporto</title>
-    <link rel="stylesheet" href="/frontend/css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css">
     <style>
         :root {
             --primary-color: #164194;
@@ -571,7 +571,7 @@
                 <div class="page-header">
                     <h1>📅 Disponibilidade de Ambientes</h1>
                     <div class="header-actions">
-                        <a href="/frontend/reservar-chave.html" class="btn btn-secondary">
+                        <a href="/reservar-chave" class="btn btn-secondary">
                             🔑 Ir para Reservas
                         </a>
                     </div>
@@ -866,7 +866,7 @@
         function logout() {
             sessionStorage.removeItem('userToken');
             localStorage.removeItem('userToken');
-            window.location.href = '/frontend/login.html';
+            window.location.href = '/';
         }
     </script>
 </body>
