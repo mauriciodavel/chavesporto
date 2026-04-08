@@ -914,11 +914,20 @@
                     blockouts = data.data.blockouts || [];
                     
                     console.log(`✅ Dados carregados: ${environments.length} ambientes, ${reservations.length} reservas, ${blockouts.length} bloqueios`);
+                    
+                    // Debug: Check Lab-01 reservations
+                    const lab01Reservations = reservations.filter(r => {
+                        const env = environments.find(e => e.id === r.key_id);
+                        return env && env.environment === 'Lab-01 - Prototipar';
+                    });
+                    console.log('🔍 Reservas de Lab-01:', lab01Reservations);
+                    
                     if (blockouts.length > 0) {
                         console.log('🔧 Bloqueios carregados:', blockouts.map(b => ({ 
                             env: b.environment_id, 
                             start: b.start_date, 
-                            end: b.end_date, 
+                            end: b.end_date,
+                            type: b.type,
                             reason: b.reason 
                         })));
                     }
@@ -1039,6 +1048,16 @@
                         dayDateStr <= r.reservation_end_date
                     );
                     
+                    // Debug log for Lab-01 on 2026-04-10
+                    if (env.environment === 'Lab-01 - Prototipar' && dayDateStr === '2026-04-10') {
+                        console.log(`🔍 DEBUG Lab-01 em 2026-04-10:`, {
+                            envId: env.id,
+                            dayDateStr: dayDateStr,
+                            allReservations: reservations.filter(r => dayDateStr >= r.reservation_start_date && dayDateStr <= r.reservation_end_date),
+                            filteredByEnv: dayReservations
+                        });
+                    }
+                    
                     // Get tooltip from all reservations
                     let dayTooltip = '';
                     
@@ -1062,6 +1081,14 @@
                     // Build tooltip with both blockout and reservations
                     if (blockoutInfo) {
                         dayTooltip = blockoutInfo;
+                        
+                        // Debug log for blockout
+                        if (dayDateStr === '2026-04-10') {
+                            console.log(`🔒 Blockout encontrado em ${dayDateStr}:`, {
+                                blockout: blockout,
+                                blockoutLabel: getBlockoutTypeLabel(blockout.type)
+                            });
+                        }
                     }
                     
                     if (dayReservations.length > 0) {
@@ -1088,6 +1115,12 @@
                     
                     shifts.forEach(shift => {
                         const shiftStatus = getDayShiftStatus(env.id, date, shift);
+                        
+                        // Debug log for Lab-01 on 2026-04-10
+                        if (env.environment === 'Lab-01 - Prototipar' && dayDateStr === '2026-04-10') {
+                            console.log(`📊 Status ${shift} - ${env.environment}:`, shiftStatus);
+                        }
+                        
                         const shiftCell = document.createElement('div');
                         shiftCell.className = `shift-cell ${shiftStatus.class}`;
                         
@@ -1158,6 +1191,12 @@
             
             if (blockout) {
                 const blockoutLabel = getBlockoutTypeLabel(blockout.type);
+                
+                // Debug log for blockout
+                if (dateStr === '2026-04-10') {
+                    console.log(`✨ Blockout applied - shift: ${shift}, type: ${blockout.type}, label:`, blockoutLabel);
+                }
+                
                 return {
                     class: 'day-blocked',
                     emoji: blockoutLabel.emoji,
@@ -1184,6 +1223,11 @@
             });
 
             if (reservation) {
+                // Debug log for Lab-01 on 2026-04-10
+                if (dateStr === '2026-04-10' && envId.includes('Lab-01')) {
+                    console.log(`🎯 Reserva encontrada - envId: ${envId}, shift: ${shift}, key_id: ${reservation.key_id}, description: ${reservation.description}`);
+                }
+                
                 return {
                     class: 'day-reserved',
                     emoji: '📌',
