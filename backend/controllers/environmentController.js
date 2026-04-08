@@ -108,9 +108,11 @@ exports.getWeeklyAvailability = async (req, res) => {
         shift,
         turma,
         status,
+        reservation_type,
         instructors!instructor_id (id, name)
       `)
-      .eq('status', 'approved');
+      .eq('status', 'approved')
+      .neq('reservation_type', 'blockout');  // Excluir bloqueios da lista de reservas
 
     if (resError) {
       console.error('❌ Erro ao buscar reservas:', resError);
@@ -143,12 +145,11 @@ exports.getWeeklyAvailability = async (req, res) => {
         .gte('blockout_end_date', startStr);
       
       if (blockoutsError) {
-        console.warn('⚠️  Aviso ao buscar bloqueios:', blockoutsError.message);
+        console.warn('⚠️  Aviso ao buscar bloqueios calendar_blockouts:', blockoutsError.message);
         blockouts = [];
       } else {
-        console.log(`🔒 [BLOCKOUTS] Total de bloqueios na tabela (filtrados): ${blockoutsData?.length || 0}`);
+        console.log(`🔒 [BLOCKOUTS] Total de bloqueios na tabela calendar_blockouts: ${blockoutsData?.length || 0}`);
         
-        // Filtrar deletados em JavaScript
         blockouts = (blockoutsData || [])
           .map(b => ({
             id: b.id,
@@ -156,19 +157,61 @@ exports.getWeeklyAvailability = async (req, res) => {
             end_date: b.blockout_end_date,
             reason: b.observation || b.blockout_type,
             shift: b.shift,
-            type: b.blockout_type  // Adicionar tipo para exibição correta no frontend
+            type: b.blockout_type
           }));
+      }
+    } catch (err) {
+      console.error('❌ Erro ao buscar bloqueios calendar_blockouts:', err.message);
+      blockouts = [];
+    }
+
+    // Também buscar bloqueios em key_reservations com reservation_type = 'blockout'
+    try {
+      const { data: keyBlockouts, error: keyBlockoutsError } = await supabase
+        .from('key_reservations')
+        .select('id, key_id, reservation_start_date, reservation_end_date, turma, shift')
+        .eq('reservation_type', 'blockout')
+        .eq('status', 'approved')
+        .lte('reservation_start_date', endStr)
+        .gte('reservation_end_date', startStr);
+
+      if (keyBlockoutsError) {
+        console.warn('⚠️  Aviso ao buscar bloqueios key_reservations:', keyBlockoutsError.message);
+      } else {
+        console.log(`🔒 [KEY BLOCKOUTS] Total de bloqueios em key_reservations: ${keyBlockouts?.length || 0}`);
         
-        console.log(`✅ [BLOCKOUTS] Bloqueios após filtro: ${blockouts.length} encontrados para semana ${startStr} a ${endStr}`);
+        // Mapear bloqueios de key_reservations
+        const mappedKeyBlockouts = (keyBlockouts || []).map(b => {
+          // Extrair tipo de bloqueio do campo turma (ex: "BLOQUEIO: maintenance")
+          let blockoutType = 'maintenance';
+          if (b.turma && b.turma.includes('BLOQUEIO:')) {
+            const typeStr = b.turma.split('BLOQUEIO:')[1].trim();
+            blockoutType = typeStr;
+          }
+          
+          return {
+            id: b.id,
+            start_date: b.reservation_start_date,
+            end_date: b.reservation_end_date,
+            reason: b.turma || 'Bloqueio de ambiente',
+            shift: b.shift,
+            type: blockoutType,
+            isKeyBlockout: true
+          };
+        });
+
+        // Combinar com bloqueios de calendar_blockouts
+        blockouts = [...blockouts, ...mappedKeyBlockouts];
+        
+        console.log(`✅ [BLOCKOUTS] Total de bloqueios (calendar + key): ${blockouts.length}`);
         if (blockouts.length > 0) {
           blockouts.forEach(b => {
-            console.log(`   - ${b.start_date} a ${b.end_date}: ${b.reason}`);
+            console.log(`   - ${b.start_date} a ${b.end_date}: ${b.reason} (tipo: ${b.type})`);
           });
         }
       }
     } catch (err) {
-      console.error('❌ Erro ao buscar bloqueios:', err.message);
-      blockouts = [];
+      console.error('❌ Erro ao buscar bloqueios key_reservations:', err.message);
     }
 
     return res.status(200).json({

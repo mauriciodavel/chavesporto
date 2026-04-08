@@ -698,21 +698,38 @@
                 </div>
 
                 <!-- Legend -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
                     <div class="legend-item">
                         <div class="legend-color color-free"></div>
-                        <span><strong>Verde:</strong> Ambiente livre</span>
+                        <span><strong>Verde (L):</strong> Livre</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color color-reserved"></div>
-                        <span><strong>Roxo:</strong> Ambiente reservado</span>
+                        <span><strong>Roxo (R):</strong> Reservado</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color color-blocked"></div>
-                        <span><strong>Vermelho:</strong> Bloqueado (domingo/manutenção)</span>
+                        <span><strong>Vermelho (X):</strong> Domingo</span>
+                    </div>
+
+                    <!-- Blockout types -->
+                    <div class="legend-item">
+                        <span>🔧 <strong>M:</strong> Manutenção</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color color-holiday"></div>
-                        <span><strong>Azul:</strong> Feriado</span>
+                        <span>📚 <strong>EI:</strong> Evento Interno</span>
+                    </div>
+                    <div class="legend-item">
+                        <span>🎪 <strong>EE:</strong> Evento Externo</span>
+                    </div>
+                    <div class="legend-item">
+                        <span>🇧🇷 <strong>FN:</strong> Feriado Nacional</span>
+                    </div>
+                    <div class="legend-item">
+                        <span>🏛️ <strong>FE:</strong> Feriado Estadual</span>
+                    </div>
+                    <div class="legend-item">
+                        <span>🏢 <strong>FM:</strong> Feriado Municipal</span>
                     </div>
                 </div>
 
@@ -926,7 +943,7 @@
                     // Check for blockout/maintenance first
                     let blockoutInfo = null;
                     if (dayOfWeek === 0) {
-                        blockoutInfo = 'Domingo - Ambiente bloqueado';
+                        blockoutInfo = '🚫 Domingo - Ambiente bloqueado';
                     } else {
                         // Bloqueios se aplicam a todos os ambientes
                         const blockout = blockouts.find(b => 
@@ -934,8 +951,9 @@
                             dayDateStr <= b.end_date
                         );
                         if (blockout) {
+                            const blockoutLabel = getBlockoutTypeLabel(blockout.type);
                             const shiftInfo = blockout.shift ? ` (${blockout.shift})` : '';
-                            blockoutInfo = `Bloqueio${shiftInfo}: ${blockout.reason || 'Sem motivo especificado'}`;
+                            blockoutInfo = `${blockoutLabel.emoji} ${blockoutLabel.label}${shiftInfo}\n${blockout.reason || 'Sem motivo especificado'}`;
                         }
                     }
                     
@@ -947,12 +965,12 @@
                     if (dayReservations.length > 0) {
                         const reservationTooltip = dayReservations.map(r => {
                             const instructorName = r.instructors?.name || 'N/A';
-                            return `${getShiftLabel(r.shift)}\nInstrutor: ${instructorName}\nTurma: ${r.turma || 'N/A'}\nStatus: ${getStatusLabel(r.status)}`;
+                            return `📌 ${getShiftLabel(r.shift)}\nInstrutor: ${instructorName}\nTurma: ${r.turma || 'N/A'}\nStatus: ${getStatusLabel(r.status)}`;
                         }).join('\n\n');
                         
                         // If there's already blockout info, combine them
                         if (blockoutInfo) {
-                            dayTooltip = `${blockoutInfo}\n\n--- TAMBÉM HÁ RESERVAÇÃO(ÕES) ---\n\n${reservationTooltip}`;
+                            dayTooltip = `${blockoutInfo}\n\n═════════════════════\nRESERVAÇÕES TAMBÉM:\n═════════════════════\n${reservationTooltip}`;
                         } else {
                             dayTooltip = reservationTooltip;
                         }
@@ -1005,14 +1023,14 @@
 
         function getBlockoutTypeLabel(blockoutType) {
             const types = {
-                'maintenance': { emoji: '🔧', text: 'M' },
-                'internal_event': { emoji: '📚', text: 'EI' },
-                'external_event': { emoji: '🎪', text: 'EE' },
-                'national_holiday': { emoji: '🇧🇷', text: 'FN' },
-                'state_holiday': { emoji: '🏛️', text: 'FE' },
-                'municipal_holiday': { emoji: '🏢', text: 'FM' }
+                'maintenance': { emoji: '🔧', text: 'M', label: 'Manutenção' },
+                'internal_event': { emoji: '📚', text: 'EI', label: 'Evento Interno' },
+                'external_event': { emoji: '🎪', text: 'EE', label: 'Evento Externo' },
+                'national_holiday': { emoji: '🇧🇷', text: 'FN', label: 'Feriado Nacional' },
+                'state_holiday': { emoji: '🏛️', text: 'FE', label: 'Feriado Estadual' },
+                'municipal_holiday': { emoji: '🏢', text: 'FM', label: 'Feriado Municipal' }
             };
-            return types[blockoutType] || { emoji: '🔒', text: 'BL' };
+            return types[blockoutType] || { emoji: '🔒', text: 'BL', label: 'Bloqueio' };
         }
 
         function getDayShiftStatus(envId, date, shift) {
