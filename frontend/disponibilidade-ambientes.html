@@ -920,13 +920,14 @@
                     if (dayOfWeek === 0) {
                         blockoutInfo = 'Domingo - Ambiente bloqueado';
                     } else {
+                        // Bloqueios se aplicam a todos os ambientes
                         const blockout = blockouts.find(b => 
-                            b.environment_id === env.id && 
                             dayDateStr >= b.start_date && 
                             dayDateStr <= b.end_date
                         );
                         if (blockout) {
-                            blockoutInfo = `Manutenção: ${blockout.reason || 'Sem motivo especificado'}`;
+                            const shiftInfo = blockout.shift ? ` (${blockout.shift})` : '';
+                            blockoutInfo = `Bloqueio${shiftInfo}: ${blockout.reason || 'Sem motivo especificado'}`;
                         }
                     }
                     
@@ -1007,15 +1008,15 @@
                 };
             }
 
-            // Check if maintenance/blockout
-            const blockout = blockouts.find(b => 
-                b.environment_id === envId && 
-                dateStr >= b.start_date && 
-                dateStr <= b.end_date
-            );
+            // Check if maintenance/blockout (applies to all environments)
+            // Bloqueios podem ter um shift específico ou null (aplica a todos os turnos)
+            const blockout = blockouts.find(b => {
+                const dateMatches = dateStr >= b.start_date && dateStr <= b.end_date;
+                const shiftMatches = !b.shift || b.shift === shift;  // null = todos os turnos
+                return dateMatches && shiftMatches;
+            });
             
             if (blockout) {
-                console.log(`🔧 Bloqueio encontrado para env ${envId} em ${dateStr}:`, blockout);
                 return {
                     class: 'day-blocked',
                     emoji: '🔧',
