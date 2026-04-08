@@ -854,10 +854,18 @@
             const weekEnd = new Date(currentWeekStart);
             weekEnd.setDate(weekEnd.getDate() + 6);
 
-            // Update week display
+            // Update week display with both formatted and ISO dates
             const formatDate = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+            const formatDateISO = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            
+            const weekStartISO = formatDateISO(currentWeekStart);
+            const weekEndISO = formatDateISO(weekEnd);
+            
             document.getElementById('currentWeekDisplay').textContent = 
-                `${formatDate(currentWeekStart)} a ${formatDate(weekEnd)}`;
+                `${formatDate(currentWeekStart)} a ${formatDate(weekEnd)} (${weekStartISO} a ${weekEndISO})`;
+            
+            // Log para diagnóstico
+            console.log(`📅 SEMANA ATUAL: ${weekStartISO} a ${weekEndISO}`);
 
             // Create headers
             const thead = document.getElementById('tableHead');
