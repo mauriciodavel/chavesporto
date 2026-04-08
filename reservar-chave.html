@@ -127,6 +127,18 @@
             cursor: not-allowed;
         }
 
+        .calendar-day.has-blockout {
+            background: #ffe8e8;
+            color: #c0392b;
+            border: 2px solid #e74c3c;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .calendar-day.has-blockout:hover {
+            background: #ffd4d4;
+        }
+
         .month-nav {
             display: flex;
             justify-content: space-between;
@@ -474,9 +486,62 @@
         let startDate = null;
         let endDate = null;
         let keys = [];
+        let monthBlockouts = [];  // Armazenar bloqueios do mês
+
+        // ========== CARREGAR BLOQUEIOS DO MÊS ==========
+        async function loadBlockoutsForMonth() {
+            try {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                
+                // Primeiro dia do mês
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                
+                // Formatar datas como YYYY-MM-DD
+                const startStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(firstDay.getDate()).padStart(2, '0')}`;
+                const endStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+                
+                console.log(`📅 Buscando bloqueios para o mês: ${startStr} a ${endStr}`);
+                
+                const res = await fetch(`${API_BASE}/blockouts/date-range?start=${startStr}&end=${endStr}`);
+                const result = await res.json();
+                
+                if (result.success) {
+                    monthBlockouts = result.data || [];
+                    console.log(`✅ Bloqueios carregados: ${monthBlockouts.length} encontrados`);
+                    if (monthBlockouts.length > 0) {
+                        monthBlockouts.forEach(b => {
+                            console.log(`   🔒 ${b.blockout_start_date} a ${b.blockout_end_date}: ${b.blockout_reason}`);
+                        });
+                    }
+                } else {
+                    monthBlockouts = [];
+                    console.warn('⚠️ Erro ao carregar bloqueios:', result.message);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao buscar bloqueios:', error);
+                monthBlockouts = [];
+            }
+        }
+
+        // ========== VERIFICAR SE DATA TEM BLOQUEIO ==========
+        function hasBlockoutOnDate(date) {
+            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            
+            return monthBlockouts.some(blockout => {
+                // Verificar se a data está dentro do intervalo do bloqueio
+                const blockoutStart = blockout.blockout_start_date;
+                const blockoutEnd = blockout.blockout_end_date;
+                
+                return dateStr >= blockoutStart && dateStr <= blockoutEnd;
+            });
+        }
 
         // ========== CALENDÁRIO ==========
-        function renderCalendar() {
+        async function renderCalendar() {
+            // Carregar bloqueios para o mês atual
+            await loadBlockoutsForMonth();
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
             
@@ -540,6 +605,21 @@
             today.setHours(0, 0, 0, 0);
             if (date < today) {
                 el.classList.add('disabled');
+                return el;
+            }
+
+            // Verificar se tem bloqueio nesta data
+            if (hasBlockoutOnDate(date)) {
+                el.classList.add('has-blockout');
+                el.classList.add('disabled');
+                
+                // Adicionar ícone de bloqueio
+                const blockoutText = document.createElement('div');
+                blockoutText.style.fontSize = '10px';
+                blockoutText.style.marginTop = '2px';
+                blockoutText.textContent = '🔒';
+                el.appendChild(blockoutText);
+                
                 return el;
             }
 
