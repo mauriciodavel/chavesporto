@@ -127,20 +127,31 @@ exports.getWeeklyAvailability = async (req, res) => {
     try {
       const { data: blockoutsData, error: blockoutsError } = await supabase
         .from('environment_maintenance')
-        .select('id, environment_id, start_date, end_date, reason');
+        .select('id, environment_id, start_date, end_date, reason, deleted_at');
       
       if (blockoutsError) {
         console.warn('⚠️  Aviso ao buscar bloqueios:', blockoutsError.message);
         blockouts = [];
       } else {
+        console.log(`🔒 Total de bloqueios na tabela: ${blockoutsData?.length || 0}`);
+        if (blockoutsData?.length > 0) {
+          console.log('📋 Bloqueios brutos:', blockoutsData);
+        }
+        
         // Filtrar em JavaScript em vez de usar o Supabase
-        blockouts = (blockoutsData || []).filter(b => {
-          const bStart = new Date(b.start_date);
-          const bEnd = new Date(b.end_date);
-          const weekStart = new Date(startStr);
-          const weekEnd = new Date(endStr);
-          return bStart <= weekEnd && bEnd >= weekStart;
-        });
+        blockouts = (blockoutsData || [])
+          .filter(b => !b.deleted_at)  // Only non-deleted blockouts
+          .filter(b => {
+            const bStart = new Date(b.start_date);
+            const bEnd = new Date(b.end_date);
+            const weekStart = new Date(startStr);
+            const weekEnd = new Date(endStr);
+            return bStart <= weekEnd && bEnd >= weekStart;
+          });
+        
+        if (blockouts.length > 0) {
+          console.log('✅ Bloqueios filtrados para a semana:', blockouts);
+        }
       }
     } catch (err) {
       console.warn('⚠️  Erro ao buscar bloqueios (tabela pode não existir):', err.message);

@@ -229,6 +229,11 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
+        /* Hide shift cells that don't match filter */
+        .shift-cell.hidden {
+            display: none;
+        }
+
         /* LEGEND */
         .legend {
             background: white;
@@ -379,9 +384,50 @@
             justify-content: center;
             height: 100%;
             width: 100%;
-            gap: 4px;
+            gap: 0;
             font-weight: 600;
             border-radius: 4px;
+        }
+
+        /* TURNOS SUBCÉLULAS */
+        .shift-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            width: 100%;
+            min-height: 18px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            gap: 2px;
+            overflow: hidden;
+        }
+
+        .shift-cell:last-child {
+            border-bottom: none;
+        }
+
+        .shift-cell.filtered {
+            opacity: 0.6;
+        }
+
+        .shift-cell.selected {
+            opacity: 1;
+            font-weight: 700;
+        }
+
+        .shift-label {
+            font-size: 8px;
+            min-width: 35px;
+            text-align: right;
+            opacity: 0.7;
+        }
+
+        .shift-status {
+            flex: 1;
+            text-align: center;
         }
 
         /* DAY STATUS COLORS */
@@ -643,6 +689,14 @@
                     </div>
                 </div>
 
+                <!-- Environment Filter -->
+                <div class="shift-filter" id="environmentFilterContainer" style="align-items: flex-start;">
+                    <span class="shift-filter-label" style="margin-top: 8px;">🏛️ Filtrar Ambientes:</span>
+                    <div id="environmentButtons" style="flex: 1;">
+                        <!-- Preenchido dinamicamente pelo JavaScript -->
+                    </div>
+                </div>
+
                 <!-- Legend -->
                     <div class="legend-item">
                         <div class="legend-color color-free"></div>
@@ -694,6 +748,7 @@
         let reservations = [];
         let blockouts = [];
         let selectedShift = 'all';  // 'all', 'matutino', 'vespertino', 'noturno', 'integral'
+        let selectedEnvironments = new Set();  // Set of selected environment IDs
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -775,6 +830,15 @@
                     blockouts = data.data.blockouts || [];
                     
                     console.log(`✅ Dados carregados: ${environments.length} ambientes, ${reservations.length} reservas, ${blockouts.length} bloqueios`);
+                    if (blockouts.length > 0) {
+                        console.log('🔧 Bloqueios carregados:', blockouts.map(b => ({ 
+                            env: b.environment_id, 
+                            start: b.start_date, 
+                            end: b.end_date, 
+                            reason: b.reason 
+                        })));
+                    }
+                    renderEnvironmentFilter();  // Generate environment checkboxes
                     renderCalendar();
                 } else {
                     throw new Error(data.message || 'Erro ao carregar dados');
@@ -820,6 +884,11 @@
             }
 
             environments.forEach(env => {
+                // Filter environments: if any environment selected, skip others
+                if (selectedEnvironments.size > 0 && !selectedEnvironments.has(env.id)) {
+                    return;  // Skip this environment
+                }
+                
                 const row = document.createElement('tr');
                 row.innerHTML = `<td>${env.environment}</td>`;
 
@@ -827,17 +896,93 @@
                     const date = new Date(currentWeekStart);
                     date.setDate(date.getDate() + i);
                     
-                    const dayStatus = getDayStatus(env.id, date);
+                    // Create cell with 3 shift rows (matutino, vespertino, noturno)
                     const cell = document.createElement('td');
-                    cell.innerHTML = `<div class="cell-day ${dayStatus.class}"><span class="day-label">${dayStatus.emoji}</span><span class="day-status">${dayStatus.text}</span></div>`;
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell-day';
+                    cellDiv.style.gap = '1px';  // Small gap between shifts
                     
-                    if (dayStatus.tooltip) {
-                        cell.title = dayStatus.tooltip;
-                        cell.style.cursor = 'help';
-                        cell.addEventListener('mouseenter', (e) => showTooltip(e, dayStatus.tooltip));
-                        cell.addEventListener('mouseleave', hideTooltip);
+                    const dayDateStr = formatDateLocal(date);
+                    const dayOfWeek = date.getDay();
+                    
+                    // Get all reservations for this day (across all shifts)
+                    const dayReservations = reservations.filter(r => 
+                        r.key_id === env.id && 
+                        dayDateStr >= r.reservation_start_date && 
+                        dayDateStr <= r.reservation_end_date
+                    );
+                    
+                    // Get tooltip from all reservations
+                    let dayTooltip = '';
+                    
+                    // Check for blockout/maintenance first
+                    let blockoutInfo = null;
+                    if (dayOfWeek === 0) {
+                        blockoutInfo = 'Domingo - Ambiente bloqueado';
+                    } else {
+                        const blockout = blockouts.find(b => 
+                            b.environment_id === env.id && 
+                            dayDateStr >= b.start_date && 
+                            dayDateStr <= b.end_date
+                        );
+                        if (blockout) {
+                            blockoutInfo = `Manutenção: ${blockout.reason || 'Sem motivo especificado'}`;
+                        }
                     }
                     
+                    // Build tooltip with both blockout and reservations
+                    if (blockoutInfo) {
+                        dayTooltip = blockoutInfo;
+                    }
+                    
+                    if (dayReservations.length > 0) {
+                        const reservationTooltip = dayReservations.map(r => {
+                            const instructorName = r.instructors?.name || 'N/A';
+                            return `${getShiftLabel(r.shift)}\nInstrutor: ${instructorName}\nTurma: ${r.turma || 'N/A'}\nStatus: ${getStatusLabel(r.status)}`;
+                        }).join('\n\n');
+                        
+                        // If there's already blockout info, combine them
+                        if (blockoutInfo) {
+                            dayTooltip = `${blockoutInfo}\n\n--- TAMBÉM HÁ RESERVAÇÃO(ÕES) ---\n\n${reservationTooltip}`;
+                        } else {
+                            dayTooltip = reservationTooltip;
+                        }
+                    }
+                    
+                    // Render 3 shift cells
+                    let shifts = ['matutino', 'vespertino', 'noturno'];
+                    
+                    // When filtering by integral, only show matutino and vespertino
+                    if (selectedShift === 'integral') {
+                        shifts = ['matutino', 'vespertino'];
+                    }
+                    
+                    shifts.forEach(shift => {
+                        const shiftStatus = getDayShiftStatus(env.id, date, shift);
+                        const shiftCell = document.createElement('div');
+                        shiftCell.className = `shift-cell ${shiftStatus.class}`;
+                        
+                        // Hide shift cells that don't match the selected shift
+                        if (selectedShift !== 'all' && selectedShift !== 'integral') {
+                            if (selectedShift !== shift) {
+                                shiftCell.classList.add('hidden');
+                            }
+                        }
+                        
+                        const shiftHtml = `<span class="day-label">${shiftStatus.emoji}</span><span class="day-status">${shiftStatus.text}</span>`;
+                        shiftCell.innerHTML = shiftHtml;
+                        
+                        if (dayTooltip) {
+                            shiftCell.title = dayTooltip;
+                            shiftCell.style.cursor = 'help';
+                            shiftCell.addEventListener('mouseenter', (e) => showTooltip(e, dayTooltip));
+                            shiftCell.addEventListener('mouseleave', hideTooltip);
+                        }
+                        
+                        cellDiv.appendChild(shiftCell);
+                    });
+                    
+                    cell.appendChild(cellDiv);
                     row.appendChild(cell);
                 }
 
@@ -849,7 +994,7 @@
             document.getElementById('calendarTable').style.display = 'table';
         }
 
-        function getDayStatus(envId, date) {
+        function getDayShiftStatus(envId, date, shift) {
             const dateStr = formatDateLocal(date);
             const dayOfWeek = date.getDay();
 
@@ -858,8 +1003,7 @@
                 return {
                     class: 'day-blocked',
                     emoji: '🚫',
-                    text: 'Bloqueado',
-                    tooltip: 'Domingo - Ambiente bloqueado'
+                    text: 'X'
                 };
             }
 
@@ -871,40 +1015,37 @@
             );
             
             if (blockout) {
+                console.log(`🔧 Bloqueio encontrado para env ${envId} em ${dateStr}:`, blockout);
                 return {
                     class: 'day-blocked',
                     emoji: '🔧',
-                    text: 'Manutenção',
-                    tooltip: `Manutenção: ${blockout.reason || 'Sem motivo especificado'}`
+                    text: 'M'
                 };
             }
 
-            // Check if has reservation
-            const filteredReservations = reservations.filter(r => {
-                // Filtrar por turno selecionado
-                if (selectedShift !== 'all' && r.shift !== selectedShift) {
-                    return false;
+            // Check if has reservation for this specific shift
+            // Integral shift counts as both matutino AND vespertino
+            const reservation = reservations.find(r => {
+                const matchesEnvAndDate = r.key_id === envId && 
+                    dateStr >= r.reservation_start_date && 
+                    dateStr <= r.reservation_end_date;
+                
+                if (!matchesEnvAndDate) return false;
+                
+                // Integral shift appears in both matutino and vespertino
+                if (r.shift === 'integral') {
+                    return shift === 'matutino' || shift === 'vespertino';
                 }
-                return true;
+                
+                // Other shifts match exactly
+                return r.shift === shift;
             });
 
-            const reservation = filteredReservations.find(r => 
-                r.key_id === envId && 
-                dateStr >= r.reservation_start_date && 
-                dateStr <= r.reservation_end_date
-            );
-
             if (reservation) {
-                const instructorName = reservation.instructors?.name || 'N/A';
                 return {
                     class: 'day-reserved',
                     emoji: '📌',
-                    text: 'Reservado',
-                    tooltip: 
-                        `Instrutor: ${instructorName}\n` +
-                        `Turno: ${getShiftLabel(reservation.shift)}\n` +
-                        `Status: ${getStatusLabel(reservation.status)}\n` +
-                        `Turma: ${reservation.turma || 'N/A'}`
+                    text: 'R'
                 };
             }
 
@@ -912,9 +1053,73 @@
             return {
                 class: 'day-free',
                 emoji: '✅',
-                text: 'Livre',
-                tooltip: null
+                text: 'L'
             };
+        }
+
+        function renderEnvironmentFilter() {
+            const container = document.getElementById('environmentButtons');
+            
+            // Create select/combobox
+            const select = document.createElement('select');
+            select.id = 'environmentSelect';
+            select.multiple = true;
+            select.style.padding = '8px 12px';
+            select.style.border = '2px solid var(--primary-color)';
+            select.style.borderRadius = '6px';
+            select.style.cursor = 'pointer';
+            select.style.fontSize = '13px';
+            select.style.fontWeight = '600';
+            select.style.color = 'var(--primary-color)';
+            select.style.backgroundColor = 'white';
+            select.style.minWidth = '200px';
+            select.style.maxHeight = '150px';
+            select.style.fontFamily = 'inherit';
+            
+            // Add "Todos" option
+            const todosOption = document.createElement('option');
+            todosOption.value = 'all';
+            todosOption.textContent = '✓ Todos';
+            todosOption.selected = true;
+            select.appendChild(todosOption);
+            
+            // Add separator
+            if (environments.length > 0) {
+                const separator = document.createElement('option');
+                separator.disabled = true;
+                separator.textContent = '─────────────';
+                select.appendChild(separator);
+            }
+            
+            // Add environment options
+            environments.forEach(env => {
+                const option = document.createElement('option');
+                option.value = env.id;
+                option.textContent = env.environment || `Ambiente ${env.id}`;
+                select.appendChild(option);
+            });
+            
+            // Handle change events
+            select.addEventListener('change', () => {
+                selectedEnvironments.clear();
+                
+                // Check if "Todos" is selected
+                const isTodosSelected = Array.from(select.selectedOptions).some(opt => opt.value === 'all');
+                
+                if (!isTodosSelected) {
+                    // If specific environments are selected, add them to set
+                    Array.from(select.selectedOptions).forEach(opt => {
+                        if (opt.value !== 'all') {
+                            selectedEnvironments.add(opt.value);
+                        }
+                    });
+                }
+                
+                renderCalendar();
+            });
+            
+            container.innerHTML = '';
+            container.appendChild(select);
         }
 
         function getStatusLabel(status) {
