@@ -434,6 +434,10 @@
             border-bottom: none;
         }
 
+        .shift-label-col.hidden {
+            display: none;
+        }
+
         .cell-day {
             display: flex;
             flex-direction: column;
@@ -982,13 +986,37 @@
 
                 // Add shifts column
                 const shiftsCell = document.createElement('td');
-                shiftsCell.innerHTML = `
-                    <div class="shift-column">
-                        <div class="shift-label-col">MAT</div>
-                        <div class="shift-label-col">VES</div>
-                        <div class="shift-label-col">NOT</div>
-                    </div>
-                `;
+                const shiftColumn = document.createElement('div');
+                shiftColumn.className = 'shift-column';
+                
+                // Define which shifts to show based on filter
+                let shiftsToShow = ['matutino', 'vespertino', 'noturno'];
+                if (selectedShift === 'integral') {
+                    shiftsToShow = ['matutino', 'vespertino'];
+                } else if (selectedShift !== 'all') {
+                    shiftsToShow = [selectedShift];
+                }
+                
+                const shiftLabels = [
+                    { shift: 'matutino', label: 'MAT' },
+                    { shift: 'vespertino', label: 'VES' },
+                    { shift: 'noturno', label: 'NOT' }
+                ];
+                
+                shiftLabels.forEach(({ shift, label }) => {
+                    const labelDiv = document.createElement('div');
+                    labelDiv.className = 'shift-label-col';
+                    labelDiv.textContent = label;
+                    
+                    // Hide if not in shiftsToShow
+                    if (!shiftsToShow.includes(shift)) {
+                        labelDiv.classList.add('hidden');
+                    }
+                    
+                    shiftColumn.appendChild(labelDiv);
+                });
+                
+                shiftsCell.appendChild(shiftColumn);
                 row.appendChild(shiftsCell);
 
                 for (let i = 0; i < 7; i++) {
