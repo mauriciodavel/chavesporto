@@ -21,17 +21,21 @@ exports.getAmbientesComReservas = async (req, res) => {
   try {
     console.log('📺 [PAINEL] Obtendo ambientes com reservas ativas');
 
-    // ✅ CORRIGIDO: Usar data LOCAL (Brasil) em vez de UTC
-    // toISOString() retorna UTC, mas precisamos da data local em Brasil (UTC-3)
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const today = `${year}-${month}-${day}`;
+    // ✅ SOLUÇÃO: Em vez de filtrar por data no backend (que sofre com fusos horários),
+    // buscamos um intervalo AMPLO de reservas aprovadas e deixamos o frontend filtrar
+    // pela data LOCAL correta (que o browser conhece).
     
-    console.log(`📅 Data LOCAL (Brasil): ${today}`);
-    console.log(`   Hora LOCAL: ${now.toLocaleTimeString('pt-BR')}`);
-    console.log(`   Timezone offset: ${-now.getTimezoneOffset() / 60} horas`);
+    // Buscar as reservas com um intervalo de -30 dias até +30 dias
+    // para cobrir qualquer diferença de fuso horário entre backend/frontend
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    const minDate = thirtyDaysAgo.toISOString().split('T')[0];
+    const maxDate = thirtyDaysLater.toISOString().split('T')[0];
+
+    console.log(`📅 Intervalo de busca: ${minDate} a ${maxDate}`);
+    console.log(`   (Atualmente UTC, será filtrado por data LOCAL no frontend)`);
 
     const { data: reservas, error: reservasError } = await supabase
       .from('key_reservations')
@@ -49,8 +53,8 @@ exports.getAmbientesComReservas = async (req, res) => {
         instructors!instructor_id (id, name)
       `)
       .eq('status', 'approved')
-      .lte('reservation_start_date', today)
-      .gte('reservation_end_date', today)
+      .gte('reservation_start_date', minDate)
+      .lte('reservation_end_date', maxDate)
       .order('reservation_start_date', { ascending: true });
 
     if (reservasError) {
@@ -62,45 +66,12 @@ exports.getAmbientesComReservas = async (req, res) => {
       });
     }
 
-    console.log(`✅ ${reservas?.length || 0} reservas ativas encontradas no intervalo [<=${today}, >=${today}]`);
+    console.log(`✅ ${reservas?.length || 0} reservas encontradas no intervalo amplo`);
     if (reservas && reservas.length > 0) {
-      console.log('📋 Primeiras 3 reservas:', reservas.slice(0, 3).map(r => ({
-        id: r.id,
-        start: r.reservation_start_date,
-        end: r.reservation_end_date,
-        turma: r.turma,
-        instructor: r.instructors?.name,
-        chave: r.keys?.environment
-      })));
-    } else {
-      console.log('⚠️ ATENÇÃO: Nenhuma reserva encontrada! Verificar datas de início/fim...');
-      
-      // Log de debug: buscar TODAS as reservas aprovadas sem filtro de data
-      const { data: allReservas } = await supabase
-        .from('key_reservations')
-        .select(`
-          id,
-          reservation_start_date,
-          reservation_end_date,
-          shift,
-          turma,
-          status,
-          keys!inner (environment),
-          instructors!instructor_id (name)
-        `)
-        .eq('status', 'approved')
-        .order('reservation_start_date', { ascending: false })
-        .limit(10);
-      
-      console.log(`📊 Debug: Total de reservas aprovadas (últimas 10): ${allReservas?.length || 0}`);
-      if (allReservas && allReservas.length > 0) {
-        console.log('   Amostra:', allReservas.map(r => ({
-          start: r.reservation_start_date,
-          end: r.reservation_end_date,
-          chave: r.keys?.environment,
-          turma: r.turma
-        })));
-      }
+      console.log('📋 Amostra (primeiras 3):');
+      reservas.slice(0, 3).forEach(r => {
+        console.log(`   - ${r.turma} | ${r.keys?.environment} | ${r.instructors?.name} | ${r.reservation_start_date} a ${r.reservation_end_date}`);
+      });
     }
 
     // Transformar dados para formato da tabela
@@ -120,18 +91,14 @@ exports.getAmbientesComReservas = async (req, res) => {
 
         if (!historyError && history && history.length > 0) {
           const h = history[0];
-          // ✅ CORRIGIDO: A lógica correta de status é:
-          // - Se foi retirada E NÃO foi devolvida → 'withdrawn' (em uso)
-          // - Se foi retirada E foi devolvida → 'reservado' (disponível novamente)
           if (h.withdrawn_at && !h.returned_at) {
-            keyStatus = 'withdrawn'; // Em uso - retirada mas não devolvida
+            keyStatus = 'withdrawn'; // Em uso
           } else if (h.withdrawn_at && h.returned_at) {
-            keyStatus = 'reservado'; // ✅ CORRIGIDO: Devolvida = Disponível novamente
+            keyStatus = 'reservado'; // Devolvida
           }
         }
       } catch (err) {
         console.warn('⚠️ Erro ao buscar histórico da chave:', err);
-        // Manter como 'reservado' se houver erro
       }
 
       return {
@@ -146,8 +113,8 @@ exports.getAmbientesComReservas = async (req, res) => {
         start_time: horarios.start,
         end_time: horarios.end,
         shift: res.shift,
-        status: res.status, // Status da reserva (approved)
-        key_status: keyStatus, // Status da chave (reservado/withdrawn/returned)
+        status: res.status,
+        key_status: keyStatus,
         motivo_detalhado: res.motivo_detalhado || ''
       };
     }));

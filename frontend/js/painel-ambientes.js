@@ -175,14 +175,29 @@ function filterAndSort() {
   const sortBy = document.getElementById('sortSelect').value;
   const activeTurns = getActiveTurns();
 
-  // Filtrar por turno ativo e termo de busca
+  // ✅ Obter data LOCAL do navegador (não UTC)
+  const now = new Date();
+  const todayYear = now.getFullYear();
+  const todayMonth = String(now.getMonth() + 1).padStart(2, '0');
+  const todayDay = String(now.getDate()).padStart(2, '0');
+  const todayLocal = `${todayYear}-${todayMonth}-${todayDay}`;
+  
+  console.log(`🔍 Filtrando por data LOCAL: ${todayLocal}`);
+
+  // Filtrar por turno ativo, data e termo de busca
   filteredData = ambientesData.filter(item => {
-    // Verificar se o turno está ativo
+    // 1️⃣ Verificar se o turno está ativo
     if (!activeTurns.includes(item.shift)) {
       return false;
     }
 
-    // Aplicar filtro de busca
+    // 2️⃣ ✅ Verificar se a reserva está ATIVA hoje (data LOCAL)
+    // A reserva é ativa se: start_date <= hoje <= end_date
+    if (item.start_date > todayLocal || item.end_date < todayLocal) {
+      return false;
+    }
+
+    // 3️⃣ Aplicar filtro de busca
     const searchFields = [
       item.turma || '',
       item.instructor_name || '',
@@ -193,6 +208,8 @@ function filterAndSort() {
 
     return searchFields.includes(searchTerm);
   });
+
+  console.log(`   Encontrados: ${filteredData.length} ambientes ativos`);
 
   // Ordenar
   sortData(sortBy);
