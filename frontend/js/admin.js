@@ -10,6 +10,10 @@ let adminHistory = [];
 let editingKeyId = null;
 let editingInstructorId = null;
 
+// Keys View State
+let keysViewMode = 'table'; // 'table' or 'cards'
+let keysSortBy = 'environment'; // 'environment', 'description', 'status'
+
 document.addEventListener('DOMContentLoaded', () => {
   initializeAdmin();
   setupAdminEventListeners();
@@ -60,6 +64,20 @@ function setupAdminEventListeners() {
   // Search
   document.getElementById('keysSearch').addEventListener('input', (e) => {
     filterKeys(e.target.value);
+  });
+
+  // Keys View Toggle
+  document.querySelectorAll('input[name="keysView"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      keysViewMode = e.target.value;
+      displayAdminKeys();
+    });
+  });
+
+  // Keys Sort
+  document.getElementById('keysSort').addEventListener('change', (e) => {
+    keysSortBy = e.target.value;
+    displayAdminKeys();
   });
 
   document.getElementById('instructorsSearch').addEventListener('input', (e) => {
@@ -185,7 +203,76 @@ function displayAdminKeys() {
     return;
   }
 
-  container.innerHTML = adminKeys.map(key => `
+  // Sort keys based on selected sort option
+  const sortedKeys = [...adminKeys].sort((a, b) => {
+    switch (keysSortBy) {
+      case 'description':
+        return a.description.localeCompare(b.description);
+      case 'status':
+        return a.status.localeCompare(b.status);
+      case 'environment':
+      default:
+        return a.environment.localeCompare(b.environment);
+    }
+  });
+
+  // Render based on view mode
+  if (keysViewMode === 'table') {
+    renderKeysTable(sortedKeys, container);
+  } else {
+    renderKeysCards(sortedKeys, container);
+  }
+}
+
+function renderKeysTable(keys, container) {
+  container.className = 'keys-list table-view';
+  
+  const tableHTML = `
+    <table class="keys-table">
+      <thead>
+        <tr>
+          <th>Chave</th>
+          <th>Descrição</th>
+          <th>Lotação</th>
+          <th>Área</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${keys.map(key => `
+          <tr>
+            <td><strong>${key.environment}</strong></td>
+            <td>${key.description}</td>
+            <td>${key.location}</td>
+            <td>${key.technical_area || '-'}</td>
+            <td>
+              <span class="badge ${key.status === 'available' ? 'badge-success' : 'badge-danger'}">
+                ${key.status === 'available' ? 'Disponível' : 'Em uso'}
+              </span>
+            </td>
+            <td>
+              <div class="keys-table-actions">
+                ${key.status === 'in_use' ? `
+                  <button class="btn btn-sm btn-success" onclick="returnKeyAsAdmin('${key.id}', '${key.environment}')">Devolver</button>
+                ` : ''}
+                <button class="btn btn-sm btn-secondary" onclick="editKey('${key.id}')">Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteKey('${key.id}', '${key.environment}')">Deletar</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+  
+  container.innerHTML = tableHTML;
+}
+
+function renderKeysCards(keys, container) {
+  container.className = 'keys-list';
+  
+  const cardsHTML = keys.map(key => `
     <div class="key-item">
       <div class="key-item-header">
         <div class="key-item-title">${key.environment}</div>
@@ -215,6 +302,8 @@ function displayAdminKeys() {
       </div>
     </div>
   `).join('');
+  
+  container.innerHTML = cardsHTML;
 }
 
 function filterKeys(searchTerm) {
@@ -234,28 +323,25 @@ function filterKeys(searchTerm) {
     return;
   }
 
-  container.innerHTML = filtered.map(key => `
-    <div class="key-item">
-      <div class="key-item-header">
-        <div class="key-item-title">${key.environment}</div>
-        <div class="key-item-actions">
-          <button class="btn btn-sm btn-secondary" onclick="editKey('${key.id}')">Editar</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteKey('${key.id}', '${key.environment}')">Deletar</button>
-        </div>
-      </div>
-      <div class="key-item-info">
-        <p><strong>Descrição:</strong> ${key.description}</p>
-        <p><strong>Lotação:</strong> ${key.location}</p>
-        <p><strong>Área:</strong> ${key.technical_area || '-'}</p>
-        <p><strong>QR Code:</strong> ${key.qr_code}</p>
-        <p><strong>Status:</strong> 
-          <span class="badge ${key.status === 'available' ? 'badge-success' : 'badge-danger'}">
-            ${key.status === 'available' ? 'Disponível' : 'Em uso'}
-          </span>
-        </p>
-      </div>
-    </div>
-  `).join('');
+  // Sort keys based on selected sort option
+  const sortedKeys = [...filtered].sort((a, b) => {
+    switch (keysSortBy) {
+      case 'description':
+        return a.description.localeCompare(b.description);
+      case 'status':
+        return a.status.localeCompare(b.status);
+      case 'environment':
+      default:
+        return a.environment.localeCompare(b.environment);
+    }
+  });
+
+  // Render based on view mode
+  if (keysViewMode === 'table') {
+    renderKeysTable(sortedKeys, container);
+  } else {
+    renderKeysCards(sortedKeys, container);
+  }
 }
 
 function resetKeyForm() {

@@ -197,6 +197,117 @@
       margin-bottom: 0.5rem;
     }
 
+    /* Keys Controls */
+    .keys-controls {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background-color: rgba(255, 140, 0, 0.05);
+      border-radius: var(--border-radius);
+      border-left: 3px solid var(--primary-color);
+      align-items: center;
+    }
+
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .view-toggle label {
+      font-weight: 600;
+      color: var(--light-text);
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .radio-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      color: #999;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .radio-label:hover {
+      color: var(--light-text);
+    }
+
+    .radio-label input[type="radio"] {
+      cursor: pointer;
+      accent-color: var(--primary-color);
+    }
+
+    .sort-control {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sort-control label {
+      font-weight: 600;
+      color: var(--light-text);
+    }
+
+    .sort-control select {
+      width: 200px;
+    }
+
+    /* Table View Styles */
+    .keys-list.table-view {
+      display: block;
+    }
+
+    .keys-list.table-view .keys-table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: var(--secondary-color);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+    }
+
+    .keys-list.table-view .keys-table thead {
+      background-color: rgba(255, 140, 0, 0.1);
+      border-bottom: 2px solid var(--primary-color);
+    }
+
+    .keys-list.table-view .keys-table th {
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .keys-list.table-view .keys-table td {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid #3a3a3a;
+      color: #ddd;
+    }
+
+    .keys-list.table-view .keys-table tbody tr:hover {
+      background-color: rgba(255, 140, 0, 0.05);
+    }
+
+    .keys-list.table-view .keys-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .keys-table-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .keys-table-actions button {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.75rem;
+    }
+
     /* Form Modal */
     .form-modal {
       display: none;
@@ -576,6 +687,31 @@
                 >
               </div>
               <button class="btn btn-primary" id="newKeyBtn">+ Nova Chave</button>
+            </div>
+          </div>
+
+          <!-- View Toggle and Sort Controls -->
+          <div class="keys-controls">
+            <div class="view-toggle">
+              <label>Visualização:</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input type="radio" name="keysView" value="table" id="viewTable" checked>
+                  Tabela
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="keysView" value="cards" id="viewCards">
+                  Cards
+                </label>
+              </div>
+            </div>
+            <div class="sort-control">
+              <label for="keysSort">Ordenar por:</label>
+              <select id="keysSort" class="form-control">
+                <option value="environment">Nome da Chave</option>
+                <option value="description">Descrição</option>
+                <option value="status">Status</option>
+              </select>
             </div>
           </div>
 

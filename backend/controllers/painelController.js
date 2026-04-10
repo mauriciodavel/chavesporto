@@ -21,8 +21,17 @@ exports.getAmbientesComReservas = async (req, res) => {
   try {
     console.log('📺 [PAINEL] Obtendo ambientes com reservas ativas');
 
-    // Buscar TODAS as reservas aprovadas e ativas
-    const today = new Date().toISOString().split('T')[0];
+    // ✅ CORRIGIDO: Usar data LOCAL (Brasil) em vez de UTC
+    // toISOString() retorna UTC, mas precisamos da data local em Brasil (UTC-3)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+    
+    console.log(`📅 Data LOCAL (Brasil): ${today}`);
+    console.log(`   Hora LOCAL: ${now.toLocaleTimeString('pt-BR')}`);
+    console.log(`   Timezone offset: ${-now.getTimezoneOffset() / 60} horas`);
 
     const { data: reservas, error: reservasError } = await supabase
       .from('key_reservations')
@@ -53,7 +62,46 @@ exports.getAmbientesComReservas = async (req, res) => {
       });
     }
 
-    console.log(`✅ ${reservas?.length || 0} reservas ativas encontradas`);
+    console.log(`✅ ${reservas?.length || 0} reservas ativas encontradas no intervalo [<=${today}, >=${today}]`);
+    if (reservas && reservas.length > 0) {
+      console.log('📋 Primeiras 3 reservas:', reservas.slice(0, 3).map(r => ({
+        id: r.id,
+        start: r.reservation_start_date,
+        end: r.reservation_end_date,
+        turma: r.turma,
+        instructor: r.instructors?.name,
+        chave: r.keys?.environment
+      })));
+    } else {
+      console.log('⚠️ ATENÇÃO: Nenhuma reserva encontrada! Verificar datas de início/fim...');
+      
+      // Log de debug: buscar TODAS as reservas aprovadas sem filtro de data
+      const { data: allReservas } = await supabase
+        .from('key_reservations')
+        .select(`
+          id,
+          reservation_start_date,
+          reservation_end_date,
+          shift,
+          turma,
+          status,
+          keys!inner (environment),
+          instructors!instructor_id (name)
+        `)
+        .eq('status', 'approved')
+        .order('reservation_start_date', { ascending: false })
+        .limit(10);
+      
+      console.log(`📊 Debug: Total de reservas aprovadas (últimas 10): ${allReservas?.length || 0}`);
+      if (allReservas && allReservas.length > 0) {
+        console.log('   Amostra:', allReservas.map(r => ({
+          start: r.reservation_start_date,
+          end: r.reservation_end_date,
+          chave: r.keys?.environment,
+          turma: r.turma
+        })));
+      }
+    }
 
     // Transformar dados para formato da tabela
     const ambientes = await Promise.all((reservas || []).map(async (res) => {

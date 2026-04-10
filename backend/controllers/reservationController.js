@@ -820,10 +820,10 @@ exports.createMaintenance = async (req, res) => {
 exports.updateReservation = async (req, res) => {
   try {
     const { id } = req.params;
-    const { key_id, reservation_start_date, reservation_end_date, shift, turma, motivo_detalhado } = req.body;
+    const { instructor_id, key_id, reservation_start_date, reservation_end_date, shift, turma, motivo_detalhado } = req.body;
 
     console.log('✏️ [UPDATE RESERVATION] Atualizando reserva:', id);
-    console.log('   Dados:', { key_id, reservation_start_date, reservation_end_date, shift, turma, motivo_detalhado });
+    console.log('   Dados:', { instructor_id, key_id, reservation_start_date, reservation_end_date, shift, turma, motivo_detalhado });
 
     // Buscar reserva
     const { data: reservation, error: fetchError } = await supabase
@@ -843,6 +843,7 @@ exports.updateReservation = async (req, res) => {
     const { data, error } = await supabase
       .from("key_reservations")
       .update({
+        ...(instructor_id && { instructor_id }),
         ...(key_id && { key_id }),
         ...(reservation_start_date && { reservation_start_date }),
         ...(reservation_end_date && { reservation_end_date }),
@@ -862,7 +863,7 @@ exports.updateReservation = async (req, res) => {
       });
     }
 
-    console.log("✅ [UPDATE RESERVATION] Reserva atualizada com sucesso");
+    console.log("✅ [UPDATE RESERVATION] Reserva atualizada com sucesso", data);
 
     return res.status(200).json({
       success: true,

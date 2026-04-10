@@ -838,6 +838,12 @@
             <h3>Editar Reserva</h3>
             <form id="editForm">
                 <div style="margin-bottom: 15px;">
+                    <label for="editInstructor">Instrutor:</label>
+                    <select id="editInstructor" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">-- Selecione um instrutor --</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 15px;">
                     <label for="editStartDate">Data Início:</label>
                     <input type="date" id="editStartDate" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
@@ -904,6 +910,45 @@
         let allReservations = [];
         let selectedReservationId = null;
         let pendingOperation = null;
+        let allInstructors = [];
+
+        // ========== CARREGAR INSTRUTORES ==========
+        async function loadInstructors() {
+            try {
+                console.log('📥 Carregando instrutores...');
+                const res = await fetch(`${API_BASE}/instructors`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.success && data.data) {
+                    allInstructors = data.data;
+                    console.log('✅ Instrutores carregados:', allInstructors.length);
+                    console.log('   Primeiros instrutores:', allInstructors.slice(0, 3).map(i => ({ id: i.id, name: i.name })));
+                } else {
+                    console.error('❌ Erro ao carregar instrutores:', data);
+                }
+            } catch (error) {
+                console.error('❌ Erro na requisição de instrutores:', error);
+            }
+        }
+
+        function populateInstructorSelect() {
+            const select = document.getElementById('editInstructor');
+            console.log('🔄 [POPULATE SELECT] Instrutores disponíveis:', allInstructors.length);
+            
+            select.innerHTML = '<option value="">-- Selecione um instrutor --</option>';
+            
+            allInstructors.forEach(instructor => {
+                console.log(`  - ${instructor.id}: ${instructor.name}`);
+                const option = document.createElement('option');
+                option.value = instructor.id;
+                option.textContent = instructor.name;
+                select.appendChild(option);
+            });
+            
+            console.log('✅ Select preenchido com', select.options.length - 1, 'instrutores');
+        }
 
         // ========== CARREGAR RESERVAS ==========
         async function loadReservations() {
@@ -916,6 +961,7 @@
                 console.log('📥 [LOAD RESERVATIONS] Resposta completa:', data);
                 console.log('📥 [LOAD RESERVATIONS] Primeira reserva:', data.data?.[0]);
                 if (data.data?.[0]) {
+                    console.log('   - instructor_id:', data.data[0].instructor_id);
                     console.log('   - instructor_name:', data.data[0].instructor_name);
                     console.log('   - instructor:', data.data[0].instructor);
                     console.log('   - keys:', data.data[0].keys);
@@ -928,7 +974,7 @@
                     renderReservations();
                 }
             } catch (error) {
-                console.error('Erro ao carregar reservas:', error);
+                console.error('❌ Erro ao carregar reservas:', error);
                 showAlert('Erro ao carregar reservas', 'error');
             }
         }
@@ -1272,6 +1318,39 @@
         function openEditModal(reservation) {
             currentEditingReservation = reservation;
             
+            console.log('🔓 [OPEN EDIT MODAL] Reserva:', {
+                id: reservation.id,
+                instructor_id: reservation.instructor_id,
+                instructor_name: reservation.instructor_name,
+                key_name: reservation.key_name,
+                shift: reservation.shift,
+                start: reservation.reservation_start_date,
+                end: reservation.reservation_end_date
+            });
+            
+            // Garantir que instrutores foram carregados
+            if (allInstructors.length === 0) {
+                console.warn('⚠️ Instrutores não foram carregados! Carregando agora...');
+                loadInstructors().then(() => {
+                    populateInstructorSelect();
+                });
+            } else {
+                // Popular o select de instrutores
+                populateInstructorSelect();
+            }
+            
+            // Definir o instrutor atual
+            console.log('📌 Definindo instrutor ID:', reservation.instructor_id);
+            if (reservation.instructor_id) {
+                // Aguardar um pouco para garantir que o select foi preenchido
+                setTimeout(() => {
+                    document.getElementById('editInstructor').value = reservation.instructor_id;
+                    console.log('✅ Valor definido no select:', document.getElementById('editInstructor').value);
+                }, 100);
+            } else {
+                console.warn('⚠️ instructor_id não encontrado na reserva');
+            }
+            
             const startDate = new Date(reservation.reservation_start_date).toISOString().split('T')[0];
             const endDate = new Date(reservation.reservation_end_date).toISOString().split('T')[0];
             
@@ -1280,6 +1359,7 @@
             document.getElementById('editShift').value = reservation.shift || 'matutino';
             document.getElementById('editMotivo').value = reservation.motivo_detalhado || '';
             
+            console.log('📝 Modal preenchido com dados da reserva');
             document.getElementById('editModal').classList.add('show');
         }
 
@@ -1290,44 +1370,85 @@
         }
 
         async function updateReservation() {
-            if (!currentEditingReservation) return;
+            if (!currentEditingReservation) {
+                console.error('❌ Nenhuma reserva em edição');
+                showAlert('Erro: Nenhuma reserva selecionada', 'error');
+                return;
+            }
 
+            const instructorId = document.getElementById('editInstructor').value;
             const startDate = document.getElementById('editStartDate').value;
             const endDate = document.getElementById('editEndDate').value;
             const shift = document.getElementById('editShift').value;
             const motivo = document.getElementById('editMotivo').value;
 
-            if (!startDate || !endDate || !shift || !motivo.trim()) {
+            console.log('📝 [UPDATE RESERVA] Dados a enviar:', {
+                reservationId: currentEditingReservation.id,
+                instructorId,
+                startDate,
+                endDate,
+                shift,
+                motivo
+            });
+
+            if (!instructorId || !startDate || !endDate || !shift || !motivo.trim()) {
+                console.error('❌ Validação falhou - campos obrigatórios:', {
+                    instructorId: !instructorId ? 'VAZIO' : 'OK',
+                    startDate: !startDate ? 'VAZIO' : 'OK',
+                    endDate: !endDate ? 'VAZIO' : 'OK',
+                    shift: !shift ? 'VAZIO' : 'OK',
+                    motivo: !motivo.trim() ? 'VAZIO' : 'OK'
+                });
                 showAlert('Todos os campos são obrigatórios', 'error');
                 return;
             }
 
             try {
+                console.log(`🔄 Enviando atualização para ${API_BASE}/reservations/${currentEditingReservation.id}`);
+                
+                const requestBody = {
+                    instructor_id: instructorId,
+                    reservation_start_date: startDate,
+                    reservation_end_date: endDate,
+                    shift: shift,
+                    motivo_detalhado: motivo
+                };
+                
+                console.log('📤 Corpo da requisição sendo enviado:', JSON.stringify(requestBody, null, 2));
+                
                 const res = await fetch(`${API_BASE}/reservations/${currentEditingReservation.id}`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        reservation_start_date: startDate,
-                        reservation_end_date: endDate,
-                        shift: shift,
-                        motivo_detalhado: motivo
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
+                console.log('📤 Resposta do servidor:', res.status, res.statusText);
                 const data = await res.json();
+                console.log('📥 Dados da resposta:', data);
+                
+                // Verificar se o instructor_id foi realmente atualizado
+                if (data.data && data.data.instructor_id) {
+                    console.log('🔍 Instrutor na resposta:', {
+                        esperado: instructorId,
+                        recebido: data.data.instructor_id,
+                        correspondencia: instructorId === data.data.instructor_id ? '✅ SIM' : '❌ NÃO'
+                    });
+                }
 
                 if (data.success) {
+                    console.log('✅ Reserva atualizada com sucesso!');
                     showAlert('✏️ Reserva atualizada com sucesso!', 'success');
                     closeEditModal();
                     loadReservations();
                 } else {
+                    console.error('❌ Erro na resposta:', data.message);
                     showAlert(data.message || 'Erro ao atualizar', 'error');
                 }
             } catch (error) {
-                console.error('Erro:', error);
+                console.error('❌ Erro na requisição:', error);
                 showAlert('Erro ao processar atualização', 'error');
             }
         }
@@ -1374,6 +1495,8 @@
 
         // ========== INICIALIZAÇÃO ==========
         window.addEventListener('load', () => {
+            console.log('🚀 Iniciando página de admin-reservas...');
+            loadInstructors();
             loadReservations();
             
             // Event listeners para filtros
