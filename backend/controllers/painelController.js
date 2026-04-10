@@ -49,10 +49,11 @@ exports.getAmbientesComReservas = async (req, res) => {
         turma,
         motivo_detalhado,
         status,
-        keys!inner (id, environment, location, description),
+        keys!inner (id, environment, location, description, display_on_painel),
         instructors!instructor_id (id, name)
       `)
       .eq('status', 'approved')
+      .eq('keys.display_on_painel', true)
       .gte('reservation_start_date', minDate)
       .lte('reservation_end_date', maxDate)
       .order('reservation_start_date', { ascending: true });

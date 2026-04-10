@@ -348,6 +348,7 @@ function resetKeyForm() {
   document.getElementById('keyForm').reset();
   document.getElementById('qrCodeContainer').style.display = 'none';
   document.getElementById('keyModalTitle').textContent = 'Nova Chave';
+  document.getElementById('keyDisplayOnPainel').checked = true;
 }
 
 function editKey(keyId) {
@@ -361,6 +362,7 @@ function editKey(keyId) {
   document.getElementById('keyLocation').value = key.location;
   document.getElementById('keyTechnicalArea').value = key.technical_area || '';
   document.getElementById('keyQrCode').value = key.qr_code;
+  document.getElementById('keyDisplayOnPainel').checked = key.display_on_painel !== false;
 
   if (key.qr_code_image) {
     document.getElementById('qrCodeImage').src = key.qr_code_image;
@@ -378,7 +380,8 @@ async function handleKeyFormSubmit(e) {
     environment: document.getElementById('keyEnvironment').value,
     description: document.getElementById('keyDescription').value,
     location: document.getElementById('keyLocation').value,
-    technicalArea: document.getElementById('keyTechnicalArea').value
+    technicalArea: document.getElementById('keyTechnicalArea').value,
+    displayOnPainel: document.getElementById('keyDisplayOnPainel').checked
   };
 
   try {

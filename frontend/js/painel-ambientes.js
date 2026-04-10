@@ -183,17 +183,26 @@ function filterAndSort() {
   const todayLocal = `${todayYear}-${todayMonth}-${todayDay}`;
   
   console.log(`🔍 Filtrando por data LOCAL: ${todayLocal}`);
+  console.log(`   Turnos ativos: [${activeTurns.join(', ')}]`);
+  console.log(`   Total de ambientes antes de filtrar: ${ambientesData.length}`);
 
   // Filtrar por turno ativo, data e termo de busca
   filteredData = ambientesData.filter(item => {
     // 1️⃣ Verificar se o turno está ativo
     if (!activeTurns.includes(item.shift)) {
+      console.log(`   ❌ Filtrado (turno): ${item.environment} - turno "${item.shift}" não está ativo`);
       return false;
     }
 
     // 2️⃣ ✅ Verificar se a reserva está ATIVA hoje (data LOCAL)
     // A reserva é ativa se: start_date <= hoje <= end_date
-    if (item.start_date > todayLocal || item.end_date < todayLocal) {
+    const startCheck = item.start_date <= todayLocal;
+    const endCheck = item.end_date >= todayLocal;
+    
+    if (!startCheck || !endCheck) {
+      console.log(`   ❌ Filtrado (data): ${item.environment} - [${item.start_date} até ${item.end_date}] vs hoje [${todayLocal}]`);
+      console.log(`      start_date <= hoje? ${startCheck} (${item.start_date} <= ${todayLocal})`);
+      console.log(`      end_date >= hoje? ${endCheck} (${item.end_date} >= ${todayLocal})`);
       return false;
     }
 
@@ -206,10 +215,17 @@ function filterAndSort() {
       item.shift || ''
     ].join(' ').toLowerCase();
 
-    return searchFields.includes(searchTerm);
+    const matchesSearch = searchFields.includes(searchTerm);
+    if (!matchesSearch && searchTerm) {
+      console.log(`   ❌ Filtrado (busca): ${item.environment} - não corresponde a "${searchTerm}"`);
+      return false;
+    }
+
+    console.log(`   ✅ INCLUÍDO: ${item.environment} | ${item.turma} | ${item.instructor_name} | ${item.start_date} a ${item.end_date}`);
+    return true;
   });
 
-  console.log(`   Encontrados: ${filteredData.length} ambientes ativos`);
+  console.log(`   RESULTADO: ${filteredData.length} ambientes ativos encontrados`);
 
   // Ordenar
   sortData(sortBy);

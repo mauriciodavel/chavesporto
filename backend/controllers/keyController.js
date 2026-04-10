@@ -354,7 +354,7 @@ exports.getKeyByQRCode = async (req, res) => {
 
 exports.createKey = async (req, res) => {
   try {
-    const { environment, description, location, technicalArea } = req.body;
+    const { environment, description, location, technicalArea, displayOnPainel } = req.body;
 
     if (!environment || !description || !location) {
       return res.status(400).json({
@@ -379,7 +379,8 @@ exports.createKey = async (req, res) => {
         location,
         technical_area: technicalArea,
         status: 'available',
-        qr_code_image: qrCodeImage
+        qr_code_image: qrCodeImage,
+        display_on_painel: displayOnPainel !== false
       })
       .select()
       .single();
@@ -404,7 +405,7 @@ exports.createKey = async (req, res) => {
 exports.updateKey = async (req, res) => {
   try {
     const { id } = req.params;
-    const { environment, description, location, technicalArea, status } = req.body;
+    const { environment, description, location, technicalArea, status, displayOnPainel } = req.body;
 
     const { data: key, error } = await supabase.admin
       .from('keys')
@@ -414,6 +415,7 @@ exports.updateKey = async (req, res) => {
         location: location || undefined,
         technical_area: technicalArea || undefined,
         status: status || undefined,
+        ...(displayOnPainel !== undefined && { display_on_painel: displayOnPainel }),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
