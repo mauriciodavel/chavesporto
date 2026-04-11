@@ -697,18 +697,25 @@
         /* ✅ MENU RETRÁTIL PARA ADMIN */
         .sidebar-toggle-btn {
             display: none;
-            background: none;
-            border: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            border: 2px solid var(--primary-color);
             color: var(--primary-color);
             font-size: 24px;
             cursor: pointer;
-            margin-right: 10px;
-            padding: 8px;
+            padding: 10px 14px;
+            border-radius: 8px;
             transition: all 0.3s;
+            z-index: 1001;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
         .sidebar-toggle-btn:hover {
-            opacity: 0.8;
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
         }
 
         /* Estado colapsado do sidebar */
@@ -766,6 +773,9 @@
     </style>
 </head>
 <body>
+    <!-- ✅ Botão de toggle fixo no canto superior esquerdo (apenas for admin) -->
+    <button class="sidebar-toggle-btn" id="sidebarToggle" title="Expandir/Retrair menu">☰</button>
+    
     <div class="admin-container">
         <!-- Sidebar -->
         <div class="admin-sidebar">
@@ -813,8 +823,6 @@
             <div class="page-container">
                 <!-- Header -->
                 <div class="page-header">
-                    <!-- Toggle button visible only for admin -->
-                    <button class="sidebar-toggle-btn" id="sidebarToggle" title="Expandir/Retrair menu">☰</button>
                     <h1>📅 Disponibilidade de Ambientes</h1>
                     <div class="header-actions">
                         <a href="/reservar-chave" class="btn btn-secondary">
