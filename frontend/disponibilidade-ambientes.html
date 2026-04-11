@@ -949,6 +949,9 @@
             if (userRole !== 'admin') {
                 console.log('ℹ️ Usuário não é admin - ocultando sidebar');
                 document.body.classList.add('not-admin');
+            } else {
+                console.log('✅ Admin detectado - ativando menu retrátil');
+                setupSidebarToggle();
             }
             
             // Setup shift filter buttons
