@@ -19,6 +19,10 @@ let currentUploadType = 1; // 1, 2, or 3
 let ambientesData = [];
 let filteredData = [];
 
+// Estado de ordenação
+let currentSortColumn = 'turma';
+let currentSortOrder = 'asc'; // 'asc' ou 'desc'
+
 // Timeout de inatividade
 let inactivityTimer = null;
 let lastActivityTime = Date.now();
@@ -232,24 +236,46 @@ function filterAndSort() {
 
   // Renderizar
   renderTable();
+  
+  // Reinicializar event listeners dos headers e indicadores
+  setupTableHeaderClickListeners();
+  updateTableHeaderIndicators();
 }
 
 function sortData(sortBy) {
+  const isDescending = currentSortOrder === 'desc';
+  
   switch(sortBy) {
     case 'turma':
-      filteredData.sort((a, b) => (a.turma || '').localeCompare(b.turma || ''));
+      filteredData.sort((a, b) => {
+        const result = (a.turma || '').localeCompare(b.turma || '');
+        return isDescending ? -result : result;
+      });
       break;
     case 'instructor':
-      filteredData.sort((a, b) => (a.instructor_name || '').localeCompare(b.instructor_name || ''));
+      filteredData.sort((a, b) => {
+        const result = (a.instructor_name || '').localeCompare(b.instructor_name || '');
+        return isDescending ? -result : result;
+      });
       break;
     case 'environment':
-      filteredData.sort((a, b) => (a.environment || '').localeCompare(b.environment || ''));
+      filteredData.sort((a, b) => {
+        const result = (a.environment || '').localeCompare(b.environment || '');
+        return isDescending ? -result : result;
+      });
+      break;
+    case 'unidade_curricular':
+      filteredData.sort((a, b) => {
+        const result = (a.unidade_curricular || '').localeCompare(b.unidade_curricular || '');
+        return isDescending ? -result : result;
+      });
       break;
     case 'time':
       filteredData.sort((a, b) => {
         const timeA = parseTimeToMinutes(a.start_time || '');
         const timeB = parseTimeToMinutes(b.start_time || '');
-        return timeA - timeB;
+        const result = timeA - timeB;
+        return isDescending ? -result : result;
       });
       break;
   }
@@ -408,6 +434,84 @@ function formatDate(dateStr) {
 }
 
 // ============================================
+// FUNÇÕES DE ORDENAÇÃO
+// ============================================
+
+function setupTableHeaderClickListeners() {
+  const thead = document.querySelector('.ambientes-table thead');
+  if (!thead) return;
+
+  const headers = thead.querySelectorAll('th');
+  headers.forEach((header, index) => {
+    // Adicionar estilo de cursor
+    header.style.cursor = 'pointer';
+    header.style.userSelect = 'none';
+    
+    let columnName = '';
+    switch(index) {
+      case 0: columnName = 'status'; break; // Status Chave (não ordenável)
+      case 1: columnName = 'turma'; break;
+      case 2: columnName = 'instructor'; break;
+      case 3: columnName = 'environment'; break;
+      case 4: columnName = 'unidade_curricular'; break;
+      case 5: columnName = 'time'; break; // Horário
+    }
+
+    if (columnName && columnName !== 'status') {
+      header.addEventListener('click', () => handleHeaderClick(columnName));
+    }
+  });
+}
+
+function handleHeaderClick(columnName) {
+  // Se clicou na mesma coluna, inverte a ordem
+  if (currentSortColumn === columnName) {
+    currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+  } else {
+    // Se clicou em coluna diferente, começa ascendente
+    currentSortColumn = columnName;
+    currentSortOrder = 'asc';
+  }
+
+  // Atualizar o dropdown
+  document.getElementById('sortSelect').value = columnName;
+  
+  // Re-renderizar com nova ordenação
+  filterAndSort();
+  updateTableHeaderIndicators();
+}
+
+function updateTableHeaderIndicators() {
+  const thead = document.querySelector('.ambientes-table thead');
+  if (!thead) return;
+
+  const headers = thead.querySelectorAll('th');
+  headers.forEach((header) => {
+    // Remover indicadores anteriores
+    header.textContent = header.textContent.replace(/\s*[↑↓]$/, '');
+  });
+
+  // Adicionar indicador na coluna ordenada
+  const columnIndex = getColumnIndexByName(currentSortColumn);
+  if (columnIndex !== -1) {
+    const header = headers[columnIndex];
+    const indicator = currentSortOrder === 'asc' ? ' ↑' : ' ↓';
+    header.textContent += indicator;
+  }
+}
+
+function getColumnIndexByName(columnName) {
+  switch(columnName) {
+    case 'turma': return 1;
+    case 'instructor': return 2;
+    case 'environment': return 3;
+    case 'unidade_curricular': return 4;
+    case 'time': return 5;
+    default: return -1;
+  }
+}
+
+// ============================================
 // EVENT LISTENERS
 // ============================================
 
@@ -416,7 +520,10 @@ function setupEventListeners() {
   document.getElementById('searchInput').addEventListener('input', filterAndSort);
 
   // Sort
-  document.getElementById('sortSelect').addEventListener('change', filterAndSort);
+  document.getElementById('sortSelect').addEventListener('change', handleSortSelectChange);
+
+  // Table headers
+  setupTableHeaderClickListeners();
 
   // Media upload input
   document.getElementById('mediaUploadInput').addEventListener('change', (e) => {
