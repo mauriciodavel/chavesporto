@@ -240,10 +240,21 @@ exports.createReservation = async (req, res) => {
         
         console.log(`   [DEBUG] Data: ${currentDateStr}, dayOfWeek=${dayOfWeek} (0=dom, 1=seg, ..., 6=sab)`);
         
-        // ✅ VERIFICAR SE É SÁBADO
+        // ✅ VERIFICAR SE É SÁBADO OU DOMINGO
         if (dayOfWeek === 6) {
           console.log(`⏭️  [CREATE RESERVATION] Pulando sábado: ${currentDateStr} (dayOfWeek=${dayOfWeek})`);
           skippedDays.push(`${currentDateStr} (sábado)`);
+          // Avançar para próximo dia
+          const [year, month, day] = currentDateStr.split('-').map(Number);
+          const nextDate = new Date(year, month - 1, day);
+          nextDate.setDate(nextDate.getDate() + 1);
+          currentDateStr = nextDate.toISOString().split('T')[0];
+          continue;
+        }
+        
+        if (dayOfWeek === 0) {
+          console.log(`⏭️  [CREATE RESERVATION] Pulando domingo: ${currentDateStr} (dayOfWeek=${dayOfWeek})`);
+          skippedDays.push(`${currentDateStr} (domingo)`);
           // Avançar para próximo dia
           const [year, month, day] = currentDateStr.split('-').map(Number);
           const nextDate = new Date(year, month - 1, day);
@@ -258,7 +269,7 @@ exports.createReservation = async (req, res) => {
           const blockoutStart = b.reservation_start_date;
           const blockoutEnd = b.reservation_end_date;
           const isDateInRange = currentDateStr >= blockoutStart && currentDateStr <= blockoutEnd;
-          const isShiftMatch = b.shift === 'integral' || b.shift === shift;
+          const isShiftMatch = b.shift === 'integral' || b.shift === shift || !b.shift;
           
           if (isDateInRange) {
             blockoutMatches.push({
@@ -269,6 +280,8 @@ exports.createReservation = async (req, res) => {
               requestShift: shift
             });
           }
+          
+          console.log(`   [BLOCKOUT_CHECK] Data=${currentDateStr}, block=${blockoutStart}..${blockoutEnd}, inRange=${isDateInRange}, shift=${b.shift}===${shift}||integral, match=${isShiftMatch}`);
           
           return isDateInRange && isShiftMatch;
         });
