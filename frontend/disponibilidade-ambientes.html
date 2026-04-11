@@ -698,15 +698,15 @@
         .sidebar-toggle-btn {
             display: none;
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 15px;
+            left: 15px;
             background: white;
             border: 2px solid var(--primary-color);
             color: var(--primary-color);
-            font-size: 24px;
+            font-size: 18px;
             cursor: pointer;
-            padding: 10px 14px;
-            border-radius: 8px;
+            padding: 8px 10px;
+            border-radius: 6px;
             transition: all 0.3s;
             z-index: 1001;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
@@ -720,8 +720,10 @@
 
         /* Estado colapsado do sidebar */
         .admin-sidebar.collapsed {
-            width: 70px;
-            padding: 15px 10px;
+            width: 0 !important;
+            padding: 0 !important;
+            overflow: hidden;
+            visibility: hidden;
         }
 
         .admin-sidebar.collapsed .admin-logo h2 {
@@ -768,7 +770,7 @@
 
         /* Quando sidebar está colapsado */
         body:not(.not-admin).sidebar-collapsed .admin-content {
-            margin-left: 70px;
+            margin-left: 0 !important;
         }
     </style>
 </head>
