@@ -214,18 +214,39 @@ exports.createReservation = async (req, res) => {
       // Admin em bloco: criar um registro para cada dia (pulando sábados e bloqueios)
       console.log('📦 [CREATE RESERVATION] Admin criando em bloco:', start_date, 'a', end_date);
       
-      let currentDay = new Date(startDateObj);
+      // Função para obter dia da semana usando fórmula de Zeller (sem timezone issues)
+      const getDayOfWeekFromString = (dateStr) => {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        // Zeller's congruence: 0=sábado, 1=domingo, ..., 6=sexta
+        let q = day;
+        let m = month;
+        let y = year;
+        if (m < 3) {
+          m += 12;
+          y -= 1;
+        }
+        const k = y % 100;
+        const j = Math.floor(y / 100);
+        const h = (q + Math.floor((13 * (m + 1)) / 5) + k + Math.floor(k / 4) + Math.floor(j / 4) - 2 * j) % 7;
+        // Converter para JS: 0=domingo, 1=segunda, ..., 6=sábado
+        return (h + 6) % 7;
+      };
+      
+      let currentDateStr = start_date;
       let skippedDays = [];
       
-      while (currentDay <= endDateObj) {
-        const dayStr = currentDay.toISOString().split('T')[0];
-        const dayOfWeek = currentDay.getDay(); // 0=domingo, 6=sábado
+      while (currentDateStr <= end_date) {
+        const dayOfWeek = getDayOfWeekFromString(currentDateStr); // 0=domingo, 6=sábado
         
         // ✅ VERIFICAR SE É SÁBADO
         if (dayOfWeek === 6) {
-          console.log(`⏭️  [CREATE RESERVATION] Pulando sábado: ${dayStr}`);
-          skippedDays.push(`${dayStr} (sábado)`);
-          currentDay.setDate(currentDay.getDate() + 1);
+          console.log(`⏭️  [CREATE RESERVATION] Pulando sábado: ${currentDateStr} (dayOfWeek=${dayOfWeek})`);
+          skippedDays.push(`${currentDateStr} (sábado)`);
+          // Avançar para próximo dia
+          const [year, month, day] = currentDateStr.split('-').map(Number);
+          const nextDate = new Date(year, month - 1, day);
+          nextDate.setDate(nextDate.getDate() + 1);
+          currentDateStr = nextDate.toISOString().split('T')[0];
           continue;
         }
         
@@ -233,24 +254,30 @@ exports.createReservation = async (req, res) => {
         const blockoutExists = blockouts && blockouts.some(b => {
           const blockoutStart = b.reservation_start_date;
           const blockoutEnd = b.reservation_end_date;
-          const isDateInRange = dayStr >= blockoutStart && dayStr <= blockoutEnd;
+          const isDateInRange = currentDateStr >= blockoutStart && currentDateStr <= blockoutEnd;
           const isShiftMatch = b.shift === 'integral' || b.shift === shift;
+          console.log(`   [DEBUG] Verif. bloqueio: ${currentDateStr}, intervalo=${blockoutStart}..${blockoutEnd}, inRange=${isDateInRange}, turnoB=${b.shift}, turnoR=${shift}, match=${isShiftMatch}`);
           return isDateInRange && isShiftMatch;
         });
         
         if (blockoutExists) {
-          console.log(`🔒 [CREATE RESERVATION] Pulando dia bloqueado: ${dayStr} (turno: ${shift})`);
-          skippedDays.push(`${dayStr} (bloqueado)`);
-          currentDay.setDate(currentDay.getDate() + 1);
+          console.log(`🔒 [CREATE RESERVATION] Pulando dia bloqueado: ${currentDateStr} (turno: ${shift})`);
+          skippedDays.push(`${currentDateStr} (bloqueado)`);
+          // Avançar para próximo dia
+          const [year, month, day] = currentDateStr.split('-').map(Number);
+          const nextDate = new Date(year, month - 1, day);
+          nextDate.setDate(nextDate.getDate() + 1);
+          currentDateStr = nextDate.toISOString().split('T')[0];
           continue;
         }
         
         // ✅ DIA VÁLIDO: ADICIONAR REGISTRO
+        console.log(`✅ [CREATE RESERVATION] Adicionando dia: ${currentDateStr} (dayOfWeek=${dayOfWeek})`);
         reservationsToInsert.push({
           key_id,
           instructor_id,
-          reservation_start_date: dayStr,
-          reservation_end_date: dayStr,
+          reservation_start_date: currentDateStr,
+          reservation_end_date: currentDateStr,
           shift,
           turma,
           unidade_curricular,
@@ -260,10 +287,14 @@ exports.createReservation = async (req, res) => {
           approved_at: new Date().toISOString(),
         });
         
-        currentDay.setDate(currentDay.getDate() + 1);
+        // Avançar para próximo dia
+        const [year, month, day] = currentDateStr.split('-').map(Number);
+        const nextDate = new Date(year, month - 1, day);
+        nextDate.setDate(nextDate.getDate() + 1);
+        currentDateStr = nextDate.toISOString().split('T')[0];
       }
       
-      console.log(`✅ [CREATE RESERVATION] Expandido em ${reservationsToInsert.length} registros (pulados: ${skippedDays.join(', ')})`);
+      console.log(`✅ [CREATE RESERVATION] Expandido em ${reservationsToInsert.length} registros (pulados: ${skippedDays.length > 0 ? skippedDays.join(', ') : 'nenhum'})`);
     } else {
       // Instructor ou admin com um único dia: um registro
       console.log('📝 [CREATE RESERVATION] Criando um registro único');
