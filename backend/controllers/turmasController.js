@@ -119,10 +119,10 @@ exports.createTurma = async (req, res) => {
     }
 
     // Validar unidades curriculares (se fornecidas)
-    if (unidadesCurriculares && unidadesCurriculares.length > 150) {
+    if (unidadesCurriculares && unidadesCurriculares.length > 1000) {
       return res.status(400).json({
         success: false,
-        message: 'Unidades curriculares não podem ter mais de 150 caracteres'
+        message: 'Unidades curriculares não podem ter mais de 1000 caracteres'
       });
     }
 
@@ -188,10 +188,10 @@ exports.updateTurma = async (req, res) => {
       });
     }
 
-    if (unidadesCurriculares && unidadesCurriculares.length > 150) {
+    if (unidadesCurriculares && unidadesCurriculares.length > 1000) {
       return res.status(400).json({
         success: false,
-        message: 'Unidades curriculares não podem ter mais de 150 caracteres'
+        message: 'Unidades curriculares não podem ter mais de 1000 caracteres'
       });
     }
 
