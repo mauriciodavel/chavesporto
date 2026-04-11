@@ -179,16 +179,14 @@ exports.createReservation = async (req, res) => {
     } else {
       // Admin em bloco: buscar bloqueios para verificação dia a dia (sem retornar erro)
       console.log('🔒 [CREATE RESERVATION] Carregando bloqueios para verificação de dias... (admin em bloco)');
-      console.log(`   Buscando bloqueios para key_id=${key_id}, intervalo=${start_date} a ${end_date}`);
+      console.log(`   Buscando bloqueios CALENDAR para dates entre ${start_date} e ${end_date}`);
       
+      // Buscar em calendar_blockouts (bloqueios de feriados, manutenção, etc.)
       const { data: blockoutsData, error: blockoutError } = await supabase
-        .from('key_reservations')
-        .select('id, reservation_start_date, reservation_end_date, shift, turma, status')
-        .eq('key_id', key_id)
-        .eq('reservation_type', 'blockout')
-        .eq('status', 'approved')
-        .lte('reservation_start_date', end_date)
-        .gte('reservation_end_date', start_date);
+        .from('calendar_blockouts')
+        .select('id, blockout_start_date, blockout_end_date, shift, blockout_type')
+        .lte('blockout_start_date', end_date)
+        .gte('blockout_end_date', start_date);
 
       if (blockoutError) {
         console.error('❌ [CREATE RESERVATION] Erro ao verificar bloqueios:', blockoutError);
@@ -198,10 +196,18 @@ exports.createReservation = async (req, res) => {
         });
       }
 
-      blockouts = blockoutsData || [];
+      // Converter para formato compatível com o resto do código
+      blockouts = (blockoutsData || []).map(b => ({
+        id: b.id,
+        reservation_start_date: b.blockout_start_date,
+        reservation_end_date: b.blockout_end_date,
+        shift: b.shift,
+        turma: b.blockout_type
+      }));
+      
       console.log(`📋 [CREATE RESERVATION] Encontrados ${blockouts.length} bloqueio(s) no período:`);
       blockouts.forEach((b, idx) => {
-        console.log(`   [${idx}] ${b.reservation_start_date} a ${b.reservation_end_date}, shift=${b.shift}, status=${b.status}, turma=${b.turma}`);
+        console.log(`   [${idx}] ${b.reservation_start_date} a ${b.reservation_end_date}, shift=${b.shift}, tipo=${b.turma}`);
       });
     }
 
