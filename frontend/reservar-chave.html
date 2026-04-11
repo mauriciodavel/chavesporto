@@ -1107,8 +1107,18 @@
 
                 <!-- Turma -->
                 <div class="form-group">
-                    <label for="turma">Turma *</label>
-                    <input type="text" id="turma" placeholder="Ex: SENAI-001" required>
+                    <label for="turmaSelect">Turma *</label>
+                    <select id="turmaSelect" required>
+                        <option value="">Carregando turmas...</option>
+                    </select>
+                </div>
+
+                <!-- Unidade Curricular -->
+                <div class="form-group">
+                    <label for="unidadeCurricularSelect">Unidade Curricular *</label>
+                    <select id="unidadeCurricularSelect" required disabled>
+                        <option value="">Selecione uma turma primeiro...</option>
+                    </select>
                 </div>
             </div>
 
@@ -1816,6 +1826,69 @@
             }
         }
 
+        // ========== CARREGAR TURMAS ==========
+        async function loadTurmas() {
+            try {
+                const res = await fetch(`${API_BASE}/turmas?status=ativas&sortBy=codigo_turma`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('turmaSelect');
+                    select.innerHTML = '<option value="">Selecione uma turma...</option>';
+                    (data.data || []).forEach(turma => {
+                        const opt = document.createElement('option');
+                        opt.value = JSON.stringify({
+                            id: turma.id,
+                            codigo_turma: turma.codigo_turma,
+                            unidades_curriculares: turma.unidades_curriculares
+                        });
+                        opt.textContent = turma.codigo_turma;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao carregar turmas:', error);
+                showAlert('Erro ao carregar turmas', 'error');
+            }
+        }
+
+        // ========== POPULAR UNIDADES CURRICULARES ==========
+        function populateUnidadesCurriculares() {
+            const turmaSelect = document.getElementById('turmaSelect');
+            const unidadeSelect = document.getElementById('unidadeCurricularSelect');
+            
+            if (!turmaSelect.value) {
+                unidadeSelect.disabled = true;
+                unidadeSelect.innerHTML = '<option value="">Selecione uma turma primeiro...</option>';
+                return;
+            }
+
+            try {
+                const turmaData = JSON.parse(turmaSelect.value);
+                const unidades = turmaData.unidades_curriculares ? 
+                    turmaData.unidades_curriculares.split(',').map(u => u.trim()) : [];
+                
+                unidadeSelect.disabled = false;
+                unidadeSelect.innerHTML = '<option value="">Selecione uma unidade...</option>';
+                
+                if (unidades.length > 0) {
+                    unidades.forEach(unidade => {
+                        const opt = document.createElement('option');
+                        opt.value = unidade;
+                        opt.textContent = unidade;
+                        unidadeSelect.appendChild(opt);
+                    });
+                } else {
+                    unidadeSelect.innerHTML = '<option value="">Nenhuma unidade curricular cadastrada</option>';
+                    unidadeSelect.disabled = true;
+                }
+            } catch (error) {
+                console.error('Erro ao popular unidades:', error);
+            }
+        }
+
         // ========== SUBMETER RESERVA ==========
         document.getElementById('reservationForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1827,8 +1900,20 @@
 
             const keyId = document.getElementById('keySelect').value;
             const shift = document.querySelector('input[name="shift"]:checked')?.value;
-            const turma = document.getElementById('turma').value;
+            const turmaSelectValue = document.getElementById('turmaSelect').value;
+            const unidadeCurricular = document.getElementById('unidadeCurricularSelect').value;
             const motivo = document.getElementById('motivo').value;
+
+            // Extrair código da turma do JSON
+            let codigoTurma = '';
+            if (turmaSelectValue) {
+                try {
+                    const turmaData = JSON.parse(turmaSelectValue);
+                    codigoTurma = turmaData.codigo_turma;
+                } catch (e) {
+                    codigoTurma = turmaSelectValue;
+                }
+            }
 
             // Validar instrutor se for admin
             if (isAdminMode && !selectedInstructorId) {
@@ -1836,7 +1921,7 @@
                 return;
             }
 
-            if (!keyId || !shift) {
+            if (!keyId || !shift || !turmaSelectValue || !unidadeCurricular) {
                 showAlert('Preencha todos os campos obrigatórios', 'error');
                 return;
             }
@@ -1848,7 +1933,7 @@
                 startDate: startDate.toISOString().split('T')[0],
                 endDate: endDate.toISOString().split('T')[0],
                 shift,
-                turma,
+                codigoTurma,
                 motivo,
                 isAdminMode
             });
@@ -1862,7 +1947,8 @@
                     start_date: startDate.toISOString().split('T')[0],
                     end_date: endDate.toISOString().split('T')[0],
                     shift,
-                    turma,
+                    turma: codigoTurma,
+                    unidade_curricular: unidadeCurricular,
                     motivo_detalhado: motivo,
                     created_by_admin: isAdminMode
                 };
@@ -2161,6 +2247,9 @@
 
         // ========== EVENT LISTENERS PARA CARREGAR DIAS BLOQUEADOS ==========
         document.getElementById('keySelect').addEventListener('change', loadBlockedDays);
+
+        // Event listener para atualizar unidades curriculares ao selecionar turma
+        document.getElementById('turmaSelect').addEventListener('change', populateUnidadesCurriculares);
         
         // Adicionar event listeners para cada botão de turno
         document.querySelectorAll('input[name="shift"]').forEach(input => {
@@ -2215,6 +2304,7 @@
             
             renderCalendar();
             loadKeys();
+            loadTurmas();
             loadMyReservations();
             loadCalendarBlockouts();
         });

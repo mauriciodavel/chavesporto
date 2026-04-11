@@ -28,6 +28,7 @@ const reservationRoutes = require('./routes/reservationRoutes');
 const blockoutRoutes = require('./routes/blockouts');
 const painelRoutes = require('./routes/painel');
 const environmentRoutes = require('./routes/environments');
+const turmasRoutes = require('./routes/turmas');
 
 // Importar schedulers
 const { initializeScheduler } = require('./jobs/scheduleNotifications');
@@ -44,6 +45,7 @@ app.use('/api/reservations', reservationRoutes);
 app.use('/api/blockouts', blockoutRoutes);
 app.use('/api/painel', painelRoutes);
 app.use('/api/environments', environmentRoutes);
+app.use('/api/turmas', turmasRoutes);
 
 // Rota para painel de ambientes (público)
 app.get('/painel', (req, res) => {

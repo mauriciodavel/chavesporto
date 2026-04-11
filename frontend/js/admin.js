@@ -7,8 +7,10 @@ const adminUserData = AuthManager.getUserData();
 let adminKeys = [];
 let adminInstructors = [];
 let adminHistory = [];
+let adminTurmas = [];
 let editingKeyId = null;
 let editingInstructorId = null;
+let editingTurmaId = null;
 
 // Keys View State
 let keysViewMode = 'table'; // 'table' or 'cards'
@@ -38,6 +40,7 @@ function initializeAdmin() {
   loadAdminKeys();
   loadAdminInstructors();
   loadAdminHistory();
+  loadAdminTurmas();
 }
 
 function setupAdminEventListeners() {
@@ -60,6 +63,9 @@ function setupAdminEventListeners() {
 
   // Instructor Form Submit
   document.getElementById('instructorForm').addEventListener('submit', handleInstructorFormSubmit);
+
+  // Setup Turmas Event Listeners
+  setupTurmasEventListeners();
 
   // Search
   document.getElementById('keysSearch').addEventListener('input', (e) => {
@@ -757,6 +763,177 @@ function displayHistoryTable(history) {
 
 // Refresh data periodically
 setInterval(() => {
-  console.log('🔄 Atualizando painel admin...');
+  console.log('📊 Atualizando painel admin...');
   loadDashboardData();
 }, 15000); // A cada 15 segundos
+
+// ============================================
+// TURMAS MANAGEMENT
+// ============================================
+
+function setupTurmasEventListeners() {
+  // New Turma Button
+  document.getElementById('newTurmaBtn').addEventListener('click', () => {
+    editingTurmaId = null;
+    resetTurmaForm();
+    openModal('turmasModal');
+  });
+
+  // Turma Form Submit
+  document.getElementById('turmasForm').addEventListener('submit', handleTurmaFormSubmit);
+
+  // Turmas Search
+  document.getElementById('turmasSearch').addEventListener('input', filterAndSortTurmas);
+
+  // Turmas Filter Radio Buttons
+  document.querySelectorAll('input[name="turmasFilter"]').forEach(radio => {
+    radio.addEventListener('change', filterAndSortTurmas);
+  });
+
+  // Turmas Sort
+  document.getElementById('turmasSort').addEventListener('change', filterAndSortTurmas);
+}
+
+async function loadAdminTurmas() {
+  try {
+    const response = await ApiClient.get('/turmas?status=ativas&sortBy=codigo_turma');
+    if (response.success) {
+      adminTurmas = response.data || [];
+      displayAdminTurmas();
+    }
+  } catch (error) {
+    console.error('Erro ao carregar turmas:', error);
+    showAlert('turmasAlert', `Erro: ${error.message}`, 'danger');
+  }
+}
+
+function displayAdminTurmas() {
+  filterAndSortTurmas();
+}
+
+function filterAndSortTurmas() {
+  const searchTerm = document.getElementById('turmasSearch').value.toLowerCase();
+  const filterStatus = document.querySelector('input[name="turmasFilter"]:checked').value;
+  const sortBy = document.getElementById('turmasSort').value;
+
+  let filtered = adminTurmas.filter(turma => {
+    const matchesSearch = turma.codigo_turma.toLowerCase().includes(searchTerm) ||
+                          turma.curso.toLowerCase().includes(searchTerm) ||
+                          (turma.unidades_curriculares || '').toLowerCase().includes(searchTerm);
+    
+    if (filterStatus === 'ativas') {
+      return matchesSearch && turma.ativo;
+    } else if (filterStatus === 'inativas') {
+      return matchesSearch && !turma.ativo;
+    }
+    return matchesSearch;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    if (sortBy === 'codigo_turma') {
+      return a.codigo_turma.localeCompare(b.codigo_turma);
+    } else if (sortBy === 'curso') {
+      return a.curso.localeCompare(b.curso);
+    }
+    return 0;
+  });
+
+  const tbody = document.getElementById('turmasTableBody');
+  
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #999;">Nenhuma turma encontrada</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(turma => `
+    <tr>
+      <td style="color: var(--primary-color); font-weight: 600;">${turma.codigo_turma}</td>
+      <td>${turma.curso}</td>
+      <td style="font-size: 0.875rem; color: #bbb;">${turma.unidades_curriculares || '-'}</td>
+      <td>
+        <span style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; ${turma.ativo ? 'background-color: rgba(76, 175, 80, 0.2); color: #4CAF50;' : 'background-color: rgba(244, 67, 54, 0.2); color: #F44336;'}">
+          ${turma.ativo ? '✅ Ativo' : '❌ Inativo'}
+        </span>
+      </td>
+      <td>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-warning" onclick="editTurma('${turma.id}')" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;">✏️ Editar</button>
+          <button class="btn btn-danger" onclick="deleteTurma('${turma.id}', '${turma.codigo_turma}')" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;">🗑️ Deletar</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function resetTurmaForm() {
+  document.getElementById('turmasForm').reset();
+  document.getElementById('turmasModalTitle').textContent = 'Nova Turma';
+  document.getElementById('turmaId').value = '';
+  document.getElementById('turmaAtivo').checked = true;
+  editingTurmaId = null;
+}
+
+function editTurma(turmaId) {
+  const turma = adminTurmas.find(t => t.id === turmaId);
+  if (!turma) return;
+
+  editingTurmaId = turmaId;
+
+  document.getElementById('turmaId').value = turma.id;
+  document.getElementById('turmaCodigoTurma').value = turma.codigo_turma;
+  document.getElementById('turmaCurso').value = turma.curso;
+  document.getElementById('turmaAtivo').checked = turma.ativo !== false;
+  document.getElementById('turmaUnidadesCurriculares').value = turma.unidades_curriculares || '';
+
+  document.getElementById('turmasModalTitle').textContent = 'Editar Turma';
+  openModal('turmasModal');
+}
+
+async function handleTurmaFormSubmit(e) {
+  e.preventDefault();
+
+  const formData = {
+    codigoTurma: document.getElementById('turmaCodigoTurma').value.trim(),
+    curso: document.getElementById('turmaCurso').value.trim(),
+    ativo: document.getElementById('turmaAtivo').checked,
+    unidadesCurriculares: document.getElementById('turmaUnidadesCurriculares').value.trim()
+  };
+
+  try {
+    let response;
+
+    if (editingTurmaId) {
+      response = await ApiClient.put(`/turmas/${editingTurmaId}`, formData);
+    } else {
+      response = await ApiClient.post('/turmas', formData);
+    }
+
+    if (response.success) {
+      showAlert('turmasAlert', editingTurmaId ? '✓ Turma atualizada com sucesso!' : '✓ Turma criada com sucesso!', 'success');
+      setTimeout(() => {
+        closeModal('turmasModal');
+        loadAdminTurmas();
+      }, 1000);
+    }
+  } catch (error) {
+    showAlert('turmasAlert', `Erro: ${error.message}`, 'danger');
+  }
+}
+
+async function deleteTurma(turmaId, codigoTurma) {
+  if (!confirm(`Tem certeza que deseja deletar a turma ${codigoTurma}?`)) return;
+
+  try {
+    const response = await ApiClient.delete(`/turmas/${turmaId}`);
+
+    if (response.success) {
+      showAlert('turmasAlert', '✓ Turma deletada com sucesso!', 'success');
+      setTimeout(() => {
+        loadAdminTurmas();
+      }, 1000);
+    }
+  } catch (error) {
+    showAlert('turmasAlert', `Erro: ${error.message}`, 'danger');
+  }
+}

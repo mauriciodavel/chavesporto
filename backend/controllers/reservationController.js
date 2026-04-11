@@ -19,6 +19,7 @@ exports.createReservation = async (req, res) => {
       end_date,
       shift,
       turma,
+      unidade_curricular,
       motivo_detalhado,
       created_by_admin,
     } = req.body;
@@ -190,6 +191,7 @@ exports.createReservation = async (req, res) => {
           reservation_end_date: dayStr,
           shift,
           turma,
+          unidade_curricular,
           motivo_detalhado,
           status: 'approved',
           approved_by: req.user.id,
@@ -211,6 +213,7 @@ exports.createReservation = async (req, res) => {
         reservation_end_date: end_date,
         shift,
         turma,
+        unidade_curricular,
         motivo_detalhado,
         status,
         approved_by: created_by_admin ? req.user.id : null,

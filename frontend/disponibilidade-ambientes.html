@@ -681,6 +681,89 @@
             border-left: 4px solid #2980b9;
         }
     </style>
+
+    <!-- ✅ SEGURANÇA: CSS para ocultar sidebar de não-admin -->
+    <style>
+        /* Quando não for admin, occultar o sidebar */
+        body.not-admin .admin-sidebar {
+            display: none !important;
+        }
+
+        /* Ajustar layout quando sidebar está oculto */
+        body.not-admin .admin-content {
+            margin-left: 0 !important;
+        }
+
+        /* ✅ MENU RETRÁTIL PARA ADMIN */
+        .sidebar-toggle-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 10px;
+            padding: 8px;
+            transition: all 0.3s;
+        }
+
+        .sidebar-toggle-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* Estado colapsado do sidebar */
+        .admin-sidebar.collapsed {
+            width: 70px;
+            padding: 15px 10px;
+        }
+
+        .admin-sidebar.collapsed .admin-logo h2 {
+            display: none;
+        }
+
+        .admin-sidebar.collapsed .admin-logo {
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .admin-sidebar.collapsed .sidebar-section-title {
+            display: none;
+        }
+
+        .admin-sidebar.collapsed .sidebar-nav-item span:last-child {
+            display: none;
+        }
+
+        .admin-sidebar.collapsed .sidebar-nav-item {
+            padding: 12px 8px;
+            justify-content: center;
+            color: rgba(255,255,255,0.8);
+            font-size: 12px;
+        }
+
+        .admin-sidebar.collapsed .sidebar-section {
+            margin: 20px 0;
+        }
+
+        /* Transição suave do sidebar */
+        .admin-sidebar {
+            transition: width 0.3s ease, padding 0.3s ease;
+        }
+
+        .admin-content {
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Admin pode ver o botão toggle */
+        body:not(.not-admin) .sidebar-toggle-btn {
+            display: block;
+        }
+
+        /* Quando sidebar está colapsado */
+        body:not(.not-admin).sidebar-collapsed .admin-content {
+            margin-left: 70px;
+        }
+    </style>
 </head>
 <body>
     <div class="admin-container">
@@ -730,6 +813,8 @@
             <div class="page-container">
                 <!-- Header -->
                 <div class="page-header">
+                    <!-- Toggle button visible only for admin -->
+                    <button class="sidebar-toggle-btn" id="sidebarToggle" title="Expandir/Retrair menu">☰</button>
                     <h1>📅 Disponibilidade de Ambientes</h1>
                     <div class="header-actions">
                         <a href="/reservar-chave" class="btn btn-secondary">
@@ -828,6 +913,9 @@
         </div>
     </div>
 
+    <!-- ✅ SEGURANÇA: Carregar script de autenticação global -->
+    <script src="/js/app.js"></script>
+
     <script>
         const API_BASE = '/api';
         let currentWeekStart = getMonday(new Date());
@@ -841,8 +929,19 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🗓️ Inicializando disponibilidade de ambientes');
             
-            // Check auth
-            checkAuth();
+            // ✅ SEGURANÇA: Verificar autenticação - apenas verificar se está logado
+            if (!AuthManager.isLoggedIn()) {
+                console.warn('⚠️ Usuário não autenticado - redirecionando');
+                window.location.href = '/';
+                return;
+            }
+
+            // ✅ SEGURANÇA: Se não for admin, ocultar o menu lateral
+            const userRole = AuthManager.getRole();
+            if (userRole !== 'admin') {
+                console.log('ℹ️ Usuário não é admin - ocultando sidebar');
+                document.body.classList.add('not-admin');
+            }
             
             // Setup shift filter buttons
             document.querySelectorAll('.shift-btn').forEach(btn => {
@@ -887,14 +986,6 @@
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
-        }
-
-        function checkAuth() {
-            const token = sessionStorage.getItem('userToken') || localStorage.getItem('userToken');
-            if (!token) {
-                // Se não autenticado, redirecionar para login (depende do seu fluxo)
-                console.warn('⚠️ Usuário não autenticado');
-            }
         }
 
         async function loadCalendarData() {
@@ -987,7 +1078,7 @@
             tbody.innerHTML = '';
 
             if (environments.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #95a5a6;">Nenhum ambiente disponível</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px; color: #95a5a6;">Nenhum ambiente disponível</td></tr>';
                 return;
             }
 
@@ -1274,8 +1365,8 @@
             dropdownMenu.style.borderRadius = '6px';
             dropdownMenu.style.padding = '8px';
             dropdownMenu.style.marginTop = '4px';
-            dropdownMenu.style.minWidth = '200px';
-            dropdownMenu.style.maxHeight = '200px';
+            dropdownMenu.style.minWidth = '250px';
+            dropdownMenu.style.maxHeight = '250px';
             dropdownMenu.style.overflowY = 'auto';
             dropdownMenu.style.zIndex = '1000';
             dropdownMenu.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
@@ -1421,6 +1512,31 @@
             sessionStorage.removeItem('userToken');
             localStorage.removeItem('userToken');
             window.location.href = '/';
+        }
+
+        // ✅ MENU RETRÁTIL - Setup função de toggle
+        function setupSidebarToggle() {
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const sidebar = document.querySelector('.admin-sidebar');
+            
+            if (!toggleBtn || !sidebar) return;
+            
+            // Restaurar estado anterior do localStorage
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+                document.body.classList.add('sidebar-collapsed');
+            }
+
+            toggleBtn.addEventListener('click', () => {
+                const isCurrentlyCollapsed = sidebar.classList.toggle('collapsed');
+                document.body.classList.toggle('sidebar-collapsed', isCurrentlyCollapsed);
+                
+                // Salvar estado no localStorage
+                localStorage.setItem('sidebarCollapsed', isCurrentlyCollapsed);
+                
+                console.log(isCurrentlyCollapsed ? '🔽 Sidebar retraído' : '🔼 Sidebar expandido');
+            });
         }
     </script>
 </body>

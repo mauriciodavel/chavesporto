@@ -158,9 +158,9 @@ function getActiveTurns() {
   else if (hours >= 17.5 && hours < 22) {
     activeTurns.push('noturno');
   }
-  // Fora do horário: mostrar tudo
-  else {
-    activeTurns.push('matutino', 'vespertino', 'noturno', 'integral');
+  // D) Madrugada (22:00 - 06:00): mostrar noturno e preparar para matutino
+  else if (hours >= 22 || hours < 6) {
+    activeTurns.push('noturno');
   }
 
   return activeTurns;
@@ -288,13 +288,12 @@ function renderTable() {
       <td><strong>${item.turma || '-'}</strong></td>
       <td>${item.instructor_name || '-'}</td>
       <td>${item.environment || '-'}</td>
-      <td>${item.description || '-'}</td>
+      <td>${item.unidade_curricular || '-'}</td>
       <td>
         ${item.start_time && item.end_time 
           ? `<time>${item.start_time} - ${item.end_time}</time>` 
           : '-'}
       </td>
-      <td>${getShiftLabel(item.shift)}</td>
     </tr>
   `).join('');
 }
