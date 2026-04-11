@@ -137,34 +137,68 @@ exports.createReservation = async (req, res) => {
     console.log('✅ [CREATE RESERVATION] Chave disponível, preparando inserción...');
 
     // ========== VERIFICAR BLOQUEIOS DE AMBIENTE ==========
-    console.log('🔒 [CREATE RESERVATION] Verificando bloqueios de ambiente...');
+    // Para admin em bloco, a verificação ocorre dia a dia (no loop)
+    // Para outros casos, verificamos todo o período
+    let blockouts = [];
     
-    const { data: blockouts, error: blockoutError } = await supabase
-      .from('key_reservations')
-      .select('id, reservation_start_date, reservation_end_date, shift, turma')
-      .eq('key_id', key_id)
-      .eq('reservation_type', 'blockout')
-      .eq('status', 'approved')
-      .lte('reservation_start_date', end_date)
-      .gte('reservation_end_date', start_date);
-
-    if (blockoutError) {
-      console.error('❌ [CREATE RESERVATION] Erro ao verificar bloqueios:', blockoutError);
-      return res.status(400).json({
-        success: false,
-        message: 'Erro ao verificar bloqueios: ' + blockoutError.message
-      });
-    }
-
-    if (blockouts && blockouts.length > 0) {
-      console.warn('⚠️ [CREATE RESERVATION] Bloqueios encontrados:', blockouts.length);
-      console.log('   Bloqueios:', blockouts.map(b => b.turma).join(', '));
+    const isAdminBlockReservation = created_by_admin && new Date(start_date).getTime() !== new Date(end_date).getTime();
+    
+    if (!isAdminBlockReservation) {
+      // Verificação padrão do período inteiro (para instructor ou admin com um único dia)
+      console.log('🔒 [CREATE RESERVATION] Verificando bloqueios de ambiente...');
       
-      return res.status(409).json({
-        success: false,
-        message: 'Este ambiente está bloqueado neste período para manutenção ou evento',
-        blockouts: blockouts
-      });
+      const { data: blockoutsData, error: blockoutError } = await supabase
+        .from('key_reservations')
+        .select('id, reservation_start_date, reservation_end_date, shift, turma')
+        .eq('key_id', key_id)
+        .eq('reservation_type', 'blockout')
+        .eq('status', 'approved')
+        .lte('reservation_start_date', end_date)
+        .gte('reservation_end_date', start_date);
+
+      if (blockoutError) {
+        console.error('❌ [CREATE RESERVATION] Erro ao verificar bloqueios:', blockoutError);
+        return res.status(400).json({
+          success: false,
+          message: 'Erro ao verificar bloqueios: ' + blockoutError.message
+        });
+      }
+
+      blockouts = blockoutsData || [];
+
+      if (blockouts && blockouts.length > 0) {
+        console.warn('⚠️ [CREATE RESERVATION] Bloqueios encontrados:', blockouts.length);
+        console.log('   Bloqueios:', blockouts.map(b => b.turma).join(', '));
+        
+        return res.status(409).json({
+          success: false,
+          message: 'Este ambiente está bloqueado neste período para manutenção ou evento',
+          blockouts: blockouts
+        });
+      }
+    } else {
+      // Admin em bloco: buscar bloqueios para verificação dia a dia (sem retornar erro)
+      console.log('🔒 [CREATE RESERVATION] Carregando bloqueios para verificação de dias... (admin em bloco)');
+      
+      const { data: blockoutsData, error: blockoutError } = await supabase
+        .from('key_reservations')
+        .select('id, reservation_start_date, reservation_end_date, shift, turma')
+        .eq('key_id', key_id)
+        .eq('reservation_type', 'blockout')
+        .eq('status', 'approved')
+        .lte('reservation_start_date', end_date)
+        .gte('reservation_end_date', start_date);
+
+      if (blockoutError) {
+        console.error('❌ [CREATE RESERVATION] Erro ao verificar bloqueios:', blockoutError);
+        return res.status(400).json({
+          success: false,
+          message: 'Erro ao verificar bloqueios: ' + blockoutError.message
+        });
+      }
+
+      blockouts = blockoutsData || [];
+      console.log(`📋 [CREATE RESERVATION] Encontrados ${blockouts.length} bloqueios no período`);
     }
 
     console.log('✅ [CREATE RESERVATION] Nenhum bloqueio encontrado, prosseguindo...');
@@ -177,13 +211,41 @@ exports.createReservation = async (req, res) => {
     const endDateObj = new Date(end_date);
     
     if (created_by_admin && startDateObj.getTime() !== endDateObj.getTime()) {
-      // Admin em bloco: criar um registro para cada dia
+      // Admin em bloco: criar um registro para cada dia (pulando sábados e bloqueios)
       console.log('📦 [CREATE RESERVATION] Admin criando em bloco:', start_date, 'a', end_date);
       
       let currentDay = new Date(startDateObj);
+      let skippedDays = [];
+      
       while (currentDay <= endDateObj) {
         const dayStr = currentDay.toISOString().split('T')[0];
+        const dayOfWeek = currentDay.getDay(); // 0=domingo, 6=sábado
         
+        // ✅ VERIFICAR SE É SÁBADO
+        if (dayOfWeek === 6) {
+          console.log(`⏭️  [CREATE RESERVATION] Pulando sábado: ${dayStr}`);
+          skippedDays.push(`${dayStr} (sábado)`);
+          currentDay.setDate(currentDay.getDate() + 1);
+          continue;
+        }
+        
+        // ✅ VERIFICAR SE HÁ BLOQUEIO PARA ESTE DIA E TURNO
+        const blockoutExists = blockouts && blockouts.some(b => {
+          const blockoutStart = b.reservation_start_date;
+          const blockoutEnd = b.reservation_end_date;
+          const isDateInRange = dayStr >= blockoutStart && dayStr <= blockoutEnd;
+          const isShiftMatch = b.shift === 'integral' || b.shift === shift;
+          return isDateInRange && isShiftMatch;
+        });
+        
+        if (blockoutExists) {
+          console.log(`🔒 [CREATE RESERVATION] Pulando dia bloqueado: ${dayStr} (turno: ${shift})`);
+          skippedDays.push(`${dayStr} (bloqueado)`);
+          currentDay.setDate(currentDay.getDate() + 1);
+          continue;
+        }
+        
+        // ✅ DIA VÁLIDO: ADICIONAR REGISTRO
         reservationsToInsert.push({
           key_id,
           instructor_id,
@@ -201,7 +263,7 @@ exports.createReservation = async (req, res) => {
         currentDay.setDate(currentDay.getDate() + 1);
       }
       
-      console.log(`✅ [CREATE RESERVATION] Expandido em ${reservationsToInsert.length} registros`);
+      console.log(`✅ [CREATE RESERVATION] Expandido em ${reservationsToInsert.length} registros (pulados: ${skippedDays.join(', ')})`);
     } else {
       // Instructor ou admin com um único dia: um registro
       console.log('📝 [CREATE RESERVATION] Criando um registro único');
