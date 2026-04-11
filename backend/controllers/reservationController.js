@@ -179,10 +179,11 @@ exports.createReservation = async (req, res) => {
     } else {
       // Admin em bloco: buscar bloqueios para verificação dia a dia (sem retornar erro)
       console.log('🔒 [CREATE RESERVATION] Carregando bloqueios para verificação de dias... (admin em bloco)');
+      console.log(`   Buscando bloqueios para key_id=${key_id}, intervalo=${start_date} a ${end_date}`);
       
       const { data: blockoutsData, error: blockoutError } = await supabase
         .from('key_reservations')
-        .select('id, reservation_start_date, reservation_end_date, shift, turma')
+        .select('id, reservation_start_date, reservation_end_date, shift, turma, status')
         .eq('key_id', key_id)
         .eq('reservation_type', 'blockout')
         .eq('status', 'approved')
@@ -198,7 +199,10 @@ exports.createReservation = async (req, res) => {
       }
 
       blockouts = blockoutsData || [];
-      console.log(`📋 [CREATE RESERVATION] Encontrados ${blockouts.length} bloqueios no período`);
+      console.log(`📋 [CREATE RESERVATION] Encontrados ${blockouts.length} bloqueio(s) no período:`);
+      blockouts.forEach((b, idx) => {
+        console.log(`   [${idx}] ${b.reservation_start_date} a ${b.reservation_end_date}, shift=${b.shift}, status=${b.status}, turma=${b.turma}`);
+      });
     }
 
     console.log('✅ [CREATE RESERVATION] Nenhum bloqueio encontrado, prosseguindo...');
@@ -214,22 +218,12 @@ exports.createReservation = async (req, res) => {
       // Admin em bloco: criar um registro para cada dia (pulando sábados e bloqueios)
       console.log('📦 [CREATE RESERVATION] Admin criando em bloco:', start_date, 'a', end_date);
       
-      // Função para obter dia da semana usando fórmula de Zeller (sem timezone issues)
+      // Função para obter dia da semana de forma confiável usando Date UTC
       const getDayOfWeekFromString = (dateStr) => {
         const [year, month, day] = dateStr.split('-').map(Number);
-        // Zeller's congruence: 0=sábado, 1=domingo, ..., 6=sexta
-        let q = day;
-        let m = month;
-        let y = year;
-        if (m < 3) {
-          m += 12;
-          y -= 1;
-        }
-        const k = y % 100;
-        const j = Math.floor(y / 100);
-        const h = (q + Math.floor((13 * (m + 1)) / 5) + k + Math.floor(k / 4) + Math.floor(j / 4) - 2 * j) % 7;
-        // Converter para JS: 0=domingo, 1=segunda, ..., 6=sábado
-        return (h + 6) % 7;
+        // Usar UTC para evitar problemas de timezone local
+        const date = new Date(Date.UTC(year, month - 1, day));
+        return date.getUTCDay(); // 0=domingo, 1=segunda, ..., 6=sábado
       };
       
       let currentDateStr = start_date;
@@ -237,6 +231,8 @@ exports.createReservation = async (req, res) => {
       
       while (currentDateStr <= end_date) {
         const dayOfWeek = getDayOfWeekFromString(currentDateStr); // 0=domingo, 6=sábado
+        
+        console.log(`   [DEBUG] Data: ${currentDateStr}, dayOfWeek=${dayOfWeek} (0=dom, 1=seg, ..., 6=sab)`);
         
         // ✅ VERIFICAR SE É SÁBADO
         if (dayOfWeek === 6) {
@@ -251,14 +247,29 @@ exports.createReservation = async (req, res) => {
         }
         
         // ✅ VERIFICAR SE HÁ BLOQUEIO PARA ESTE DIA E TURNO
+        let blockoutMatches = [];
         const blockoutExists = blockouts && blockouts.some(b => {
           const blockoutStart = b.reservation_start_date;
           const blockoutEnd = b.reservation_end_date;
           const isDateInRange = currentDateStr >= blockoutStart && currentDateStr <= blockoutEnd;
           const isShiftMatch = b.shift === 'integral' || b.shift === shift;
-          console.log(`   [DEBUG] Verif. bloqueio: ${currentDateStr}, intervalo=${blockoutStart}..${blockoutEnd}, inRange=${isDateInRange}, turnoB=${b.shift}, turnoR=${shift}, match=${isShiftMatch}`);
+          
+          if (isDateInRange) {
+            blockoutMatches.push({
+              dateInRange: isDateInRange,
+              shiftMatch: isShiftMatch,
+              blockDate: `${blockoutStart}..${blockoutEnd}`,
+              blockShift: b.shift,
+              requestShift: shift
+            });
+          }
+          
           return isDateInRange && isShiftMatch;
         });
+        
+        if (blockoutMatches.length > 0) {
+          console.log(`   [DEBUG] Bloqueios encontrados para ${currentDateStr}:`, blockoutMatches);
+        }
         
         if (blockoutExists) {
           console.log(`🔒 [CREATE RESERVATION] Pulando dia bloqueado: ${currentDateStr} (turno: ${shift})`);
