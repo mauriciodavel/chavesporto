@@ -50,10 +50,17 @@ function setupEventListeners() {
     stopCamera();
   });
 
-  document.getElementById('startCameraBtn').addEventListener('click', startCamera);
-  document.getElementById('uploadQrBtn').addEventListener('click', () => {
-    document.getElementById('qrFileInput').click();
-  });
+  const startCameraBtn = document.getElementById('startCameraBtn');
+  if (startCameraBtn) {
+    startCameraBtn.addEventListener('click', startCamera);
+  }
+  
+  const uploadQrBtn = document.getElementById('uploadQrBtn');
+  if (uploadQrBtn) {
+    uploadQrBtn.addEventListener('click', () => {
+      document.getElementById('qrFileInput').click();
+    });
+  }
 
   document.getElementById('qrFileInput').addEventListener('change', handleQRImageUpload);
 
@@ -346,8 +353,11 @@ async function startCamera() {
     video.style.display = 'block';
 
     document.getElementById('qrPlaceholder').style.display = 'none';
-    document.getElementById('startCameraBtn').disabled = true;
-    document.getElementById('uploadQrBtn').disabled = true;
+    
+    const startCameraBtn = document.getElementById('startCameraBtn');
+    const uploadQrBtn = document.getElementById('uploadQrBtn');
+    if (startCameraBtn) startCameraBtn.disabled = true;
+    if (uploadQrBtn) uploadQrBtn.disabled = true;
 
     // Aguardar que o vídeo tenha dados antes de iniciar scan
     if (video.readyState >= video.HAVE_CURRENT_DATA) {
@@ -375,8 +385,11 @@ function stopCamera() {
   const video = document.getElementById('qrVideo');
   video.style.display = 'none';
   document.getElementById('qrPlaceholder').style.display = 'flex';
-  document.getElementById('startCameraBtn').disabled = false;
-  document.getElementById('uploadQrBtn').disabled = false;
+  
+  const startCameraBtn = document.getElementById('startCameraBtn');
+  const uploadQrBtn = document.getElementById('uploadQrBtn');
+  if (startCameraBtn) startCameraBtn.disabled = false;
+  if (uploadQrBtn) uploadQrBtn.disabled = false;
 }
 
 async function scanQRCode(video) {
