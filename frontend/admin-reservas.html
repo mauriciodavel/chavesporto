@@ -547,6 +547,12 @@
             font-weight: 600;
             font-size: 13px;
             border-bottom: 2px solid #34495e;
+            transition: background-color 0.2s ease;
+        }
+
+        .reservations-table th:hover {
+            background-color: #34495e;
+            cursor: pointer;
         }
 
         .reservations-table td {
@@ -773,6 +779,15 @@
                 <option value="noturno">🌙 Noturno</option>
                 <option value="integral">🔄 Integral</option>
             </select>
+            <select id="keyFilter" style="padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                <option value="">🔑 Todas as Chaves</option>
+            </select>
+            <select id="instructorFilter" style="padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                <option value="">👤 Todos os Instrutores</option>
+            </select>
+            <select id="turmaFilter" style="padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                <option value="">📚 Todas as Turmas</option>
+            </select>
             <input type="date" id="dateStartFilter" placeholder="Data Inicial" style="padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; flex: 0 0 auto; width: auto;">
             <input type="date" id="dateEndFilter" placeholder="Data Final" style="padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; flex: 0 0 auto; width: auto;">
             
@@ -915,6 +930,8 @@
         let selectedReservationId = null;
         let pendingOperation = null;
         let allInstructors = [];
+        let currentSortColumn = null;
+        let sortDirection = 'asc';
 
         // ========== CARREGAR INSTRUTORES ==========
         async function loadInstructors() {
@@ -954,6 +971,45 @@
             console.log('✅ Select preenchido com', select.options.length - 1, 'instrutores');
         }
 
+        // ========== POPULAR FILTROS (CHAVE, INSTRUTOR, TURMA) ==========
+        function populateFilterSelects() {
+            // Popular filtro de chaves
+            const uniqueKeys = [...new Set(allReservations.map(r => r.key_name).filter(Boolean))].sort();
+            const keySelect = document.getElementById('keyFilter');
+            keySelect.innerHTML = '<option value="">🔑 Todas as Chaves</option>';
+            uniqueKeys.forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = key;
+                keySelect.appendChild(option);
+            });
+
+            // Popular filtro de instrutores
+            const uniqueInstructors = [...new Set(allReservations.map(r => r.instructor_id).filter(Boolean))].sort();
+            const instructorSelect = document.getElementById('instructorFilter');
+            instructorSelect.innerHTML = '<option value="">👤 Todos os Instrutores</option>';
+            uniqueInstructors.forEach(instructorId => {
+                const instructor = allInstructors.find(i => i.id === instructorId);
+                if (instructor) {
+                    const option = document.createElement('option');
+                    option.value = instructorId;
+                    option.textContent = instructor.name;
+                    instructorSelect.appendChild(option);
+                }
+            });
+
+            // Popular filtro de turmas
+            const uniqueTurmas = [...new Set(allReservations.map(r => r.turma).filter(Boolean))].sort();
+            const turmaSelect = document.getElementById('turmaFilter');
+            turmaSelect.innerHTML = '<option value="">📚 Todas as Turmas</option>';
+            uniqueTurmas.forEach(turma => {
+                const option = document.createElement('option');
+                option.value = turma;
+                option.textContent = turma;
+                turmaSelect.appendChild(option);
+            });
+        }
+
         // ========== CARREGAR RESERVAS ==========
         async function loadReservations() {
             try {
@@ -975,6 +1031,7 @@
                 if (data.success && data.data) {
                     allReservations = data.data;
                     updateStats();
+                    populateFilterSelects();
                     renderReservations();
                 }
             } catch (error) {
@@ -998,6 +1055,9 @@
         function renderReservations() {
             const statusFilter = document.getElementById('statusFilter').value;
             const shiftFilter = document.getElementById('shiftFilter').value;
+            const keyFilter = document.getElementById('keyFilter').value;
+            const instructorFilter = document.getElementById('instructorFilter').value;
+            const turmaFilter = document.getElementById('turmaFilter').value;
             const dateStartFilter = document.getElementById('dateStartFilter').value;
             const dateEndFilter = document.getElementById('dateEndFilter').value;
             const viewMode = document.querySelector('input[name="viewMode"]:checked').value;
@@ -1009,6 +1069,15 @@
             }
             if (shiftFilter) {
                 filtered = filtered.filter(r => r.shift === shiftFilter);
+            }
+            if (keyFilter) {
+                filtered = filtered.filter(r => r.key_name === keyFilter);
+            }
+            if (instructorFilter) {
+                filtered = filtered.filter(r => r.instructor_id === instructorFilter);
+            }
+            if (turmaFilter) {
+                filtered = filtered.filter(r => r.turma === turmaFilter);
             }
             if (dateStartFilter) {
                 filtered = filtered.filter(r => new Date(r.reservation_start_date) >= new Date(dateStartFilter));
@@ -1065,6 +1134,99 @@
             });
         }
 
+        // ========== SORTAGEM DE TABELA ==========
+        function sortTable(column, currentSorted) {
+            // Invertendo direção se clicar na mesma coluna
+            if (currentSortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                sortDirection = 'asc';
+            }
+
+            let sorted = [...allReservations];
+
+            sorted.sort((a, b) => {
+                let valueA, valueB;
+
+                switch (column) {
+                    case 'key_name':
+                        valueA = a.key_name || '';
+                        valueB = b.key_name || '';
+                        break;
+                    case 'instructor_name':
+                        valueA = a.instructor_name || '';
+                        valueB = b.instructor_name || '';
+                        break;
+                    case 'turma':
+                        valueA = a.turma || '';
+                        valueB = b.turma || '';
+                        break;
+                    case 'period':
+                        valueA = new Date(a.reservation_start_date).getTime();
+                        valueB = new Date(b.reservation_start_date).getTime();
+                        break;
+                    case 'shift':
+                        valueA = a.shift || '';
+                        valueB = b.shift || '';
+                        break;
+                    case 'status':
+                        valueA = a.status || '';
+                        valueB = b.status || '';
+                        break;
+                    default:
+                        return 0;
+                }
+
+                // Comparação baseada no tipo
+                if (typeof valueA === 'string') {
+                    valueA = valueA.toLowerCase();
+                    valueB = valueB.toLowerCase();
+                }
+
+                if (sortDirection === 'asc') {
+                    return valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+                } else {
+                    return valueA > valueB ? -1 : valueA < valueB ? 1 : 0;
+                }
+            });
+
+            // Aplicar filtros após sorting
+            const statusFilter = document.getElementById('statusFilter').value;
+            const shiftFilter = document.getElementById('shiftFilter').value;
+            const keyFilter = document.getElementById('keyFilter').value;
+            const instructorFilter = document.getElementById('instructorFilter').value;
+            const turmaFilter = document.getElementById('turmaFilter').value;
+            const dateStartFilter = document.getElementById('dateStartFilter').value;
+            const dateEndFilter = document.getElementById('dateEndFilter').value;
+
+            let filtered = sorted;
+
+            if (statusFilter) {
+                filtered = filtered.filter(r => r.status === statusFilter);
+            }
+            if (shiftFilter) {
+                filtered = filtered.filter(r => r.shift === shiftFilter);
+            }
+            if (keyFilter) {
+                filtered = filtered.filter(r => r.key_name === keyFilter);
+            }
+            if (instructorFilter) {
+                filtered = filtered.filter(r => r.instructor_id === instructorFilter);
+            }
+            if (turmaFilter) {
+                filtered = filtered.filter(r => r.turma === turmaFilter);
+            }
+            if (dateStartFilter) {
+                filtered = filtered.filter(r => new Date(r.reservation_start_date) >= new Date(dateStartFilter));
+            }
+            if (dateEndFilter) {
+                filtered = filtered.filter(r => new Date(r.reservation_end_date) <= new Date(dateEndFilter));
+            }
+
+            renderTableView(filtered);
+        }
+
         function renderTableView(filtered) {
             const container = document.getElementById('reservationsContainer');
             
@@ -1072,12 +1234,24 @@
                 <table class="reservations-table show">
                     <thead>
                         <tr>
-                            <th>Chave</th>
-                            <th>Instrutor</th>
-                            <th>Turma</th>
-                            <th>Período</th>
-                            <th>Turno</th>
-                            <th>Status</th>
+                            <th style="cursor: pointer; user-select: none;" onclick="sortTable('key_name')">
+                                Chave ${currentSortColumn === 'key_name' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
+                            <th style="cursor: pointer; user-select: none;" onclick="sortTable('instructor_name')">
+                                Instrutor ${currentSortColumn === 'instructor_name' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
+                            <th style="cursor: pointer; user-select: none;" onclick="sortTable('turma')">
+                                Turma ${currentSortColumn === 'turma' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
+                            <th style="cursor: pointer; user-select: none;" onclick="sortTable('period')">
+                                Período ${currentSortColumn === 'period' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
+                            <th style="cursor: pointer; user-select: none;" onclick="sortTable('shift')">
+                                Turno ${currentSortColumn === 'shift' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
+                            <th style="cursor: pointer; user-select: none;" onclick="sortTable('status')">
+                                Status ${currentSortColumn === 'status' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
+                            </th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -1506,6 +1680,9 @@
             // Event listeners para filtros
             document.getElementById('statusFilter').addEventListener('change', renderReservations);
             document.getElementById('shiftFilter').addEventListener('change', renderReservations);
+            document.getElementById('keyFilter').addEventListener('change', renderReservations);
+            document.getElementById('instructorFilter').addEventListener('change', renderReservations);
+            document.getElementById('turmaFilter').addEventListener('change', renderReservations);
             document.getElementById('dateStartFilter').addEventListener('change', renderReservations);
             document.getElementById('dateEndFilter').addEventListener('change', renderReservations);
             

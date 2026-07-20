@@ -22,6 +22,7 @@ exports.createReservation = async (req, res) => {
       unidade_curricular,
       motivo_detalhado,
       created_by_admin,
+      conflict_resolution
     } = req.body;
 
     console.log('📋 [CREATE RESERVATION] Extraindo campos:');
@@ -33,6 +34,7 @@ exports.createReservation = async (req, res) => {
     console.log('   turma:', turma, '✓' || '✗');
     console.log('   motivo_detalhado:', motivo_detalhado, '✓' || '✗');
     console.log('   created_by_admin:', created_by_admin);
+    console.log('   conflict_resolution:', conflict_resolution);
 
     // Validar se tentou criar como admin sem ser admin
     if (created_by_admin && req.user.role !== 'admin') {
@@ -68,6 +70,130 @@ exports.createReservation = async (req, res) => {
 
     console.log('✅ [CREATE RESERVATION] Validação passou, verificando disponibilidade...');
 
+    // ========== VERIFICAR CONFLITO DE TURMA ==========
+    // Detectar se a mesma turma já tem reserva para o mesmo turno na mesma data
+    // INDEPENDENTE DO AMBIENTE/CHAVE
+    console.log('🔍 [CREATE RESERVATION] Verificando conflito de turma...');
+    console.log('   Parâmetros de busca:');
+    console.log('   - turma:', turma);
+    console.log('   - shift:', shift);
+    console.log('   - start_date:', start_date);
+    console.log('   - end_date:', end_date);
+    
+    const { data: turmaConflict, error: turmaConflictError } = await supabase
+      .from("key_reservations")
+      .select("id, shift, reservation_start_date, reservation_end_date, turma, instructor_id, key_id, status, keys(environment)")
+      .eq("turma", turma)
+      .eq("shift", shift)
+      .in("status", ["pending", "approved"])
+      .lte("reservation_start_date", end_date)
+      .gte("reservation_end_date", start_date);
+
+    if (turmaConflictError) {
+      console.error('❌ [CREATE RESERVATION] Erro ao verificar conflito de turma:', turmaConflictError);
+      return res.status(400).json({
+        success: false,
+        message: "Erro ao verificar disponibilidade: " + turmaConflictError.message
+      });
+    }
+
+    // Debug: log de resultados
+    console.log('📋 [CREATE RESERVATION] Resultado da busca de conflito de turma:');
+    console.log('   Reservas encontradas:', turmaConflict?.length || 0);
+    if (turmaConflict && turmaConflict.length > 0) {
+      turmaConflict.forEach((res, idx) => {
+        console.log(`   [${idx}] ID=${res.id}, turma=${res.turma}, shift=${res.shift}, status=${res.status}, período=${res.reservation_start_date} a ${res.reservation_end_date}, ambiente (key_id)=${res.key_id}`);
+      });
+    }
+
+    // Se há conflito de turma e não está forçando, retorna para o usuário tomar decisão
+    if (turmaConflict && turmaConflict.length > 0) {
+      const conflictReq = req.body.conflict_resolution || null;
+      
+      console.log('🔴 [CREATE RESERVATION] CONFLITO DE TURMA DETECTADO');
+      console.log('   conflict_resolution value:', conflictReq);
+      console.log('   conflictReq === "override"?', conflictReq === 'override');
+      console.log('   conflictReq === "keep_both"?', conflictReq === 'keep_both');
+      console.log('   !conflictReq?', !conflictReq);
+      
+      if (!conflictReq) {
+        console.warn('⚠️ [CREATE RESERVATION] Conflito de turma detectado:', turmaConflict.length);
+        
+        // Buscar nome do instrutor
+        let instructorName = 'Desconhecido';
+        if (turmaConflict[0].instructor_id) {
+          const { data: instructorData } = await supabase
+            .from("instructors")
+            .select("name")
+            .eq("id", turmaConflict[0].instructor_id)
+            .single();
+          
+          if (instructorData) {
+            instructorName = instructorData.name;
+          }
+        }
+
+        // Buscar nome do ambiente (chave)
+        let environment = 'Desconhecido';
+        if (turmaConflict[0].key_id) {
+          const { data: keyData } = await supabase
+            .from("keys")
+            .select("environment")
+            .eq("id", turmaConflict[0].key_id)
+            .single();
+          
+          if (keyData) {
+            environment = keyData.environment;
+          }
+        }
+        
+        return res.status(409).json({
+          success: false,
+          message: `A turma ${turma} já possui uma reserva para este ambiente, data e turno.`,
+          conflict_type: 'turma_conflict',
+          conflict: true,
+          existing_reservation: {
+            id: turmaConflict[0].id,
+            turma: turmaConflict[0].turma,
+            shift: turmaConflict[0].shift,
+            start_date: turmaConflict[0].reservation_start_date,
+            end_date: turmaConflict[0].reservation_end_date,
+            instructor_name: instructorName,
+            environment: environment
+          }
+        });
+      } else if (conflictReq === 'override') {
+        console.log('🔄 [CREATE RESERVATION] Sobrescrevendo reserva anterior...');
+        console.log('   ID a sobrescrever:', turmaConflict[0].id);
+        
+        // Fazer soft delete: marcar como rejected com motivo de sobrescrita
+        const { data: updateData, error: updateError } = await supabase
+          .from("key_reservations")
+          .update({
+            status: 'rejected',
+            rejection_reason: 'Cancelada por sobrescrita - Nova reserva para a mesma turma, data e turno'
+          })
+          .eq("id", turmaConflict[0].id)
+          .select();
+
+        if (updateError) {
+          console.error('❌ [CREATE RESERVATION] Erro ao cancelar reserva anterior:', updateError);
+          console.error('   Error message:', updateError.message);
+          console.error('   Error details:', updateError.details);
+          return res.status(400).json({
+            success: false,
+            message: 'Erro ao sobrescrever reserva anterior: ' + updateError.message
+          });
+        }
+        
+        console.log('✅ [CREATE RESERVATION] Reserva anterior marcada como rejeitada (soft delete)');
+        console.log('   Registros atualizados:', updateData?.length || 0);
+      } else if (conflictReq === 'keep_both') {
+        console.log('✅ [CREATE RESERVATION] Mantendo ambas as reservas...');
+        // Prosseguir normalmente
+      }
+    }
+
     // Lógica de conflito de turnos:
     // - INTEGRAL conflita com: matutino, vespertino e integral (NÃO com noturno)
     // - MATUTINO conflita com: integral e matutino (NÃO com outros)
@@ -96,12 +222,13 @@ exports.createReservation = async (req, res) => {
 
     const { data: conflicts, error: conflictError } = await supabase
       .from("key_reservations")
-      .select("id, shift, reservation_start_date, reservation_end_date")
+      .select("id, shift, reservation_start_date, reservation_end_date, turma")
       .eq("key_id", key_id)
       .in("shift", shiftsToCheck)
       .in("status", ["pending", "approved"])
       .lte("reservation_start_date", end_date)
-      .gte("reservation_end_date", start_date);
+      .gte("reservation_end_date", start_date)
+      .neq("turma", turma); // Excluir conflito de turma (já verificado)
 
     if (conflictError) {
       console.error('❌ [CREATE RESERVATION] Erro ao verificar conflitos:', conflictError);
@@ -129,6 +256,7 @@ exports.createReservation = async (req, res) => {
       return res.status(409).json({
         success: false,
         message: conflictMessage,
+        conflict_type: 'shift_conflict',
         conflict: true,
         conflicts: conflicts
       });

@@ -15,6 +15,13 @@ let editingTurmaId = null;
 // Keys View State
 let keysViewMode = 'table'; // 'table' or 'cards'
 let keysSortBy = 'environment'; // 'environment', 'description', 'status'
+let keysCurrentSortColumn = null;
+let keysSortDirection = 'asc';
+let keysFilters = {
+  environment: '',
+  technical_area: '',
+  status: ''
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   initializeAdmin();
@@ -63,6 +70,32 @@ function setupAdminEventListeners() {
 
   // Instructor Form Submit
   document.getElementById('instructorForm').addEventListener('submit', handleInstructorFormSubmit);
+  
+  // Keys Filters - with null checks
+  const keysFilterEnv = document.getElementById('keysFilterEnvironment');
+  const keysFilterArea = document.getElementById('keysFilterArea');
+  const keysFilterStatus = document.getElementById('keysFilterStatus');
+  
+  if (keysFilterEnv) {
+    keysFilterEnv.addEventListener('change', () => {
+      keysFilters.environment = keysFilterEnv.value;
+      displayAdminKeys();
+    });
+  }
+  
+  if (keysFilterArea) {
+    keysFilterArea.addEventListener('change', () => {
+      keysFilters.technical_area = keysFilterArea.value;
+      displayAdminKeys();
+    });
+  }
+  
+  if (keysFilterStatus) {
+    keysFilterStatus.addEventListener('change', () => {
+      keysFilters.status = keysFilterStatus.value;
+      displayAdminKeys();
+    });
+  }
 
   // Setup Turmas Event Listeners
   setupTurmasEventListeners();
@@ -78,12 +111,6 @@ function setupAdminEventListeners() {
       keysViewMode = e.target.value;
       displayAdminKeys();
     });
-  });
-
-  // Keys Sort
-  document.getElementById('keysSort').addEventListener('change', (e) => {
-    keysSortBy = e.target.value;
-    displayAdminKeys();
   });
 
   document.getElementById('instructorsSearch').addEventListener('input', (e) => {
@@ -190,10 +217,39 @@ async function loadAdminKeys() {
     const response = await ApiClient.get('/keys');
     if (response.success) {
       adminKeys = response.data;
+      populateKeysFilters();
       displayAdminKeys();
     }
   } catch (error) {
     console.error('Erro ao carregar chaves:', error);
+  }
+}
+
+function populateKeysFilters() {
+  // Populate environment filter
+  const uniqueEnvironments = [...new Set(adminKeys.map(k => k.environment).filter(Boolean))].sort();
+  const envSelect = document.getElementById('keysFilterEnvironment');
+  if (envSelect) {
+    envSelect.innerHTML = '<option value="">🔑 Todas as Chaves</option>';
+    uniqueEnvironments.forEach(env => {
+      const option = document.createElement('option');
+      option.value = env;
+      option.textContent = env;
+      envSelect.appendChild(option);
+    });
+  }
+
+  // Populate area filter
+  const uniqueAreas = [...new Set(adminKeys.map(k => k.technical_area).filter(Boolean))].sort();
+  const areaSelect = document.getElementById('keysFilterArea');
+  if (areaSelect) {
+    areaSelect.innerHTML = '<option value="">📋 Todas as Áreas</option>';
+    uniqueAreas.forEach(area => {
+      const option = document.createElement('option');
+      option.value = area;
+      option.textContent = area;
+      areaSelect.appendChild(option);
+    });
   }
 }
 
@@ -209,16 +265,58 @@ function displayAdminKeys() {
     return;
   }
 
-  // Sort keys based on selected sort option
-  const sortedKeys = [...adminKeys].sort((a, b) => {
-    switch (keysSortBy) {
-      case 'description':
-        return a.description.localeCompare(b.description);
-      case 'status':
-        return a.status.localeCompare(b.status);
+  // Apply filters
+  let filteredKeys = [...adminKeys];
+
+  if (keysFilters.environment) {
+    filteredKeys = filteredKeys.filter(k => k.environment === keysFilters.environment);
+  }
+  if (keysFilters.technical_area) {
+    filteredKeys = filteredKeys.filter(k => k.technical_area === keysFilters.technical_area);
+  }
+  if (keysFilters.status) {
+    filteredKeys = filteredKeys.filter(k => k.status === keysFilters.status);
+  }
+
+  // Sort keys based on selected sort option and direction
+  const sortedKeys = filteredKeys.sort((a, b) => {
+    let valueA, valueB;
+
+    switch (keysCurrentSortColumn) {
       case 'environment':
+        valueA = a.environment || '';
+        valueB = b.environment || '';
+        break;
+      case 'description':
+        valueA = a.description || '';
+        valueB = b.description || '';
+        break;
+      case 'location':
+        valueA = a.location || '';
+        valueB = b.location || '';
+        break;
+      case 'technical_area':
+        valueA = a.technical_area || '';
+        valueB = b.technical_area || '';
+        break;
+      case 'status':
+        valueA = a.status || '';
+        valueB = b.status || '';
+        break;
       default:
-        return a.environment.localeCompare(b.environment);
+        valueA = a.environment || '';
+        valueB = b.environment || '';
+    }
+
+    if (typeof valueA === 'string') {
+      valueA = valueA.toLowerCase();
+      valueB = valueB.toLowerCase();
+    }
+
+    if (keysSortDirection === 'asc') {
+      return valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+    } else {
+      return valueA > valueB ? -1 : valueA < valueB ? 1 : 0;
     }
   });
 
@@ -230,6 +328,18 @@ function displayAdminKeys() {
   }
 }
 
+function sortKeysTable(column) {
+  // Invertendo direção se clicar na mesma coluna
+  if (keysCurrentSortColumn === column) {
+    keysSortDirection = keysSortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    keysCurrentSortColumn = column;
+    keysSortDirection = 'asc';
+  }
+
+  displayAdminKeys();
+}
+
 function renderKeysTable(keys, container) {
   container.className = 'keys-list table-view';
   
@@ -237,11 +347,21 @@ function renderKeysTable(keys, container) {
     <table class="keys-table">
       <thead>
         <tr>
-          <th>Chave</th>
-          <th>Descrição</th>
-          <th>Lotação</th>
-          <th>Área</th>
-          <th>Status</th>
+          <th style="cursor: pointer; user-select: none;" onclick="sortKeysTable('environment')">
+            Chave ${keysCurrentSortColumn === 'environment' ? (keysSortDirection === 'asc' ? '▲' : '▼') : ''}
+          </th>
+          <th style="cursor: pointer; user-select: none;" onclick="sortKeysTable('description')">
+            Descrição ${keysCurrentSortColumn === 'description' ? (keysSortDirection === 'asc' ? '▲' : '▼') : ''}
+          </th>
+          <th style="cursor: pointer; user-select: none;" onclick="sortKeysTable('location')">
+            Lotação ${keysCurrentSortColumn === 'location' ? (keysSortDirection === 'asc' ? '▲' : '▼') : ''}
+          </th>
+          <th style="cursor: pointer; user-select: none;" onclick="sortKeysTable('technical_area')">
+            Área ${keysCurrentSortColumn === 'technical_area' ? (keysSortDirection === 'asc' ? '▲' : '▼') : ''}
+          </th>
+          <th style="cursor: pointer; user-select: none;" onclick="sortKeysTable('status')">
+            Status ${keysCurrentSortColumn === 'status' ? (keysSortDirection === 'asc' ? '▲' : '▼') : ''}
+          </th>
           <th>Ações</th>
         </tr>
       </thead>

@@ -157,7 +157,8 @@ exports.getWeeklyAvailability = async (req, res) => {
             end_date: b.blockout_end_date,
             reason: b.observation || b.blockout_type,
             shift: b.shift,
-            type: b.blockout_type
+            type: b.blockout_type,
+            key_id: null  // ✅ null = aplica a TODOS os ambientes
           }));
       }
     } catch (err) {

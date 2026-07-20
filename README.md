@@ -19,6 +19,9 @@ Sistema web para gerenciar a retirada e devolução de chaves de laboratórios e
 - CRUD completo de chaves e instrutores
 - Monitorar histórico de retiradas/devoluções
 - Configurar alertas de email para devoluções atrasadas
+- **Filtros e Ordenação Avançados**: 
+  - Gerenciar Chaves: Filtros por Ambiente, Área, Status + Ordenação por coluna
+  - Gerenciar Reservas: Filtros por Chave, Instrutor, Turma + Ordenação por coluna
 
 ## Stack Tecnológico
 
@@ -145,6 +148,37 @@ chavesporto/
 3. Para retirar: Toque na chave e escaneie o QR-Code
 4. Para devolver: Escaneie o QR-Code da chave ao final do expediente
 5. Administradores podem gerenciar chaves e instrutores na seção admin
+
+## Interface de Administração
+
+### Dashboard
+- Visualização geral do status de chaves
+- Alertas de pendências
+- Estatísticas de utilização
+
+### Gerenciar Chaves
+- **Filtros**: Ambiente (Chave), Área Técnica, Status
+- **Ordenação**: Clique nos headers das colunas para ordenar (asc/desc)
+- **Visualização**: Modo Tabela e Cards
+- Ações: Editar, Deletar, Visualizar histórico
+
+### Reservas
+- **Filtros**: Chave, Instrutor, Turma
+- **Ordenação**: Clique nos headers das colunas para ordenar (asc/desc)
+- Visualizar todas as reservas do sistema
+- Ações: Editar, Deletar, Visualizar detalhes
+
+### Instrutores
+- Cadastro e gerenciamento de instrutores
+- Definição de áreas técnicas
+
+### Turmas
+- Gerenciar turmas do sistema
+- Associação com instrutores
+
+### Histórico
+- Rastreamento completo de retiradas/devoluções
+- Filtros por data, instrutor e chave
 
 ## Alertas de Email
 

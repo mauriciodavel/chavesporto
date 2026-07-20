@@ -282,6 +282,11 @@
       text-align: left;
       font-weight: 600;
       color: var(--primary-color);
+      transition: background-color 0.2s ease;
+    }
+
+    .keys-list.table-view .keys-table th:hover {
+      background-color: rgba(255, 140, 0, 0.2);
     }
 
     .keys-list.table-view .keys-table td {
@@ -693,9 +698,20 @@
             </div>
           </div>
 
-          <!-- View Toggle and Sort Controls -->
-          <div class="keys-controls">
-            <div class="view-toggle">
+          <!-- View Toggle, Filters and Sort Controls -->
+          <div class="keys-controls" style="flex-wrap: wrap; gap: 15px; align-items: center;">
+            <select id="keysFilterEnvironment" class="form-control" style="flex: 0 0 auto; max-width: 200px;">
+              <option value="">🔑 Todas as Chaves</option>
+            </select>
+            <select id="keysFilterArea" class="form-control" style="flex: 0 0 auto; max-width: 200px;">
+              <option value="">📍 Todas as Áreas</option>
+            </select>
+            <select id="keysFilterStatus" class="form-control" style="flex: 0 0 auto; max-width: 200px;">
+              <option value="">📊 Todos os Status</option>
+              <option value="available">✅ Disponível</option>
+              <option value="in_use">🔴 Em uso</option>
+            </select>
+            <div class="view-toggle" style="margin-left: auto;">
               <label>Visualização:</label>
               <div class="radio-group">
                 <label class="radio-label">
@@ -707,14 +723,6 @@
                   Cards
                 </label>
               </div>
-            </div>
-            <div class="sort-control">
-              <label for="keysSort">Ordenar por:</label>
-              <select id="keysSort" class="form-control">
-                <option value="environment">Nome da Chave</option>
-                <option value="description">Descrição</option>
-                <option value="status">Status</option>
-              </select>
             </div>
           </div>
 
