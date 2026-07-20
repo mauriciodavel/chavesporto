@@ -1029,16 +1029,40 @@
                     });
                     console.log('🔍 Reservas de Lab-01:', lab01Reservations);
                     
+                    // DEBUG: Create environment-to-id mapping
+                    const envIdMap = {};
+                    environments.forEach(e => { envIdMap[e.id] = e.environment; });
+                    console.log('🗺️  ENVIRONMENT ID MAP:', envIdMap);
+                    
                     if (blockouts.length > 0) {
                         console.log('🔧 Bloqueios carregados (COMPLETO):', blockouts);
                         console.log('🔧 Bloqueios resumo:', blockouts.map(b => ({ 
                             key_id: b.key_id,
+                            environment_name: envIdMap[b.key_id] || 'AMBIENTE NÃO ENCONTRADO',
                             start: b.start_date, 
                             end: b.end_date,
                             type: b.type,
                             reason: b.reason,
                             shift: b.shift
                         })));
+                        
+                        // Highlight mismatches
+                        const missingEnvs = blockouts.filter(b => b.key_id && !envIdMap[b.key_id]);
+                        if (missingEnvs.length > 0) {
+                            console.warn('⚠️  AVISO: Bloqueios com key_id não encontrados nos ambientes:', missingEnvs.map(b => ({ key_id: b.key_id, reason: b.reason })));
+                            
+                            // AUTO-FIX: Converter bloqueios órfãos para bloqueios globais
+                            console.log('🔧 AUTO-FIX: Convertendo bloqueios órfãos para bloqueios globais (key_id = null)');
+                            const orphanedBlockoutIds = new Set(missingEnvs.map(b => b.id));
+                            blockouts = blockouts.map(b => {
+                                if (orphanedBlockoutIds.has(b.id)) {
+                                    console.log(`   ✅ Convertendo bloqueio "${b.reason}" para global`);
+                                    return { ...b, key_id: null };
+                                }
+                                return b;
+                            });
+                            console.log('✅ AUTO-FIX completo. Bloqueios órfãos agora se aplicam a TODOS os ambientes');
+                        }
                     }
                     
                     console.log('🏛️ Ambientes carregados:', environments.map(e => ({ id: e.id, name: e.environment })));
@@ -1187,7 +1211,23 @@
                             const blockout = blockouts.find(b => {
                                 const dateMatches = dayDateStr >= b.start_date && dayDateStr <= b.end_date;
                                 const envMatches = !b.key_id || b.key_id === env.id;
-                                const shiftMatches = !b.shift || b.shift === shift;
+                                // ✅ Shift matching: 
+                                // - null/undefined = aplica a TODOS os turnos
+                                // - "integral" = aplica a TODOS os turnos (matutino + vespertino + noturno)
+                                // - específico (matutino/vespertino/noturno) = apenas esse turno
+                                const shiftMatches = !b.shift || b.shift === 'integral' || b.shift === shift;
+                                
+                                // DEBUG: Log matching details for blockouts in current week (2026-07-20 to 2026-07-26)
+                                if (dayDateStr >= '2026-07-20' && dayDateStr <= '2026-07-26' && env.environment.includes('Lab')) {
+                                    let reason = `❌ ${env.environment} on ${dayDateStr} ${shift}:`;
+                                    reason += ` dateMatch=${dateMatches}(${b.start_date}<=${dayDateStr}<=${b.end_date})`;
+                                    reason += ` envMatch=${envMatches}(!${b.key_id} or ${b.key_id}===${env.id})`;
+                                    reason += ` shiftMatch=${shiftMatches}(!${b.shift} or ${b.shift}==integral or ${b.shift}===${shift})`;
+                                    if (!dateMatches || !envMatches || !shiftMatches) {
+                                        console.log(reason);
+                                    }
+                                }
+                                
                                 return dateMatches && envMatches && shiftMatches;
                             });
                             
@@ -1196,8 +1236,8 @@
                                 shiftTooltip = `${blockoutLabel.emoji} ${blockoutLabel.label}\n${blockout.reason || 'Sem motivo especificado'}`;
                                 
                                 // Debug log
-                                if (dayDateStr === '2026-04-10') {
-                                    console.log(`   ✅ Blockout for ${shift}: type=${blockout.type}, label=${blockoutLabel.label}`);
+                                if (dayDateStr >= '2026-07-20' && dayDateStr <= '2026-07-26') {
+                                    console.log(`   ✅ Blockout MATCHED for ${env.environment} ${shift}: type=${blockout.type}, label=${blockoutLabel.label}`);
                                 }
                             }
                         }
@@ -1282,11 +1322,15 @@
             // Check if maintenance/blockout
             // Bloqueios podem ter:
             // - key_id: null/undefined (aplica a todos) ou ID específico do ambiente
-            // - shift: null/undefined (aplica a todos os turnos) ou shift específico
+            // - shift: null/undefined (aplica a TODOS os turnos), "integral" (aplica a TODOS), ou shift específico
             const blockout = blockouts.find(b => {
                 const dateMatches = dateStr >= b.start_date && dateStr <= b.end_date;
                 const envMatches = !b.key_id || b.key_id === envId;  // null = todos os ambientes
-                const shiftMatches = !b.shift || b.shift === shift;  // null = todos os turnos
+                // ✅ Shift matching: 
+                // - null/undefined = aplica a TODOS os turnos
+                // - "integral" = aplica a TODOS os turnos (matutino + vespertino + noturno)
+                // - específico (matutino/vespertino/noturno) = apenas esse turno
+                const shiftMatches = !b.shift || b.shift === 'integral' || b.shift === shift;
                 
                 // Debug: Log para 2026-04-10
                 if (dateStr === '2026-04-10' && envId.includes('Lab')) {
