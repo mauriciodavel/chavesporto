@@ -4,21 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reservar Chave - Chavesporto</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css">
     <style>
-        :root {
-            --primary-color: #FF8C00;
-            --secondary-color: #2a2a2a;
-            --accent-color: #1a1a1a;
-            --success-color: #4CAF50;
-            --warning-color: #FFC107;
-            --danger-color: #f44336;
-            --light-text: #f0f0f0;
-            --dark-text: #333;
-            --border-radius: 12px;
-            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --transition: all 0.3s ease;
-        }
 
         .reservation-container {
             max-width: 900px;
@@ -30,84 +17,9 @@
         }
 
         h1 {
-            color: var(--light-text);
+            color: #f0f0f0;
             margin-bottom: 30px;
             text-align: center;
-        }
-
-        #blockoutForm {
-            display: none;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 30px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            color: white;
-        }
-
-        #blockoutForm h2 {
-            color: white;
-            margin-top: 0;
-        }
-
-        #blockoutForm label {
-            color: white;
-            font-weight: 600;
-        }
-
-        #blockoutForm small {
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        #blockoutForm .shifts-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-        }
-
-        #blockoutForm .shift-option {
-            position: relative;
-        }
-
-        #blockoutForm .shift-option input[type="radio"] {
-            position: absolute;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        #blockoutForm .shift-option input[type="radio"]:checked + .shift-label {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid white;
-        }
-
-        #blockoutForm .shift-label {
-            display: block;
-            padding: 12px;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            color: white;
-            transition: all 0.3s ease;
-            font-weight: 600;
-        }
-
-        #blockoutForm .shift-label:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: white;
-        }
-
-        #blockoutForm input[type="text"],
-        #blockoutForm input[type="date"],
-        #blockoutForm select,
-        #blockoutForm textarea {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid #ddd;
-            color: #333;
-        }
-
-        #blockoutForm input[type="text"]::placeholder,
-        #blockoutForm textarea::placeholder {
-            color: #999;
         }
 
         .btn-toggle-blockout {
@@ -172,7 +84,7 @@
 
         #blockoutForm .form-group label {
             font-weight: 600;
-            color: #fff;
+            color: var(--primary-color);
             font-size: 14px;
         }
 
@@ -1004,6 +916,147 @@
         .modal-icon-info {
             color: var(--primary-color);
         }
+
+        /* ========== MODAL DE CONFLITO DE TURMA ========== */
+        .conflict-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1001;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .conflict-modal-overlay.show {
+            display: flex;
+        }
+
+        .conflict-modal-content {
+            background: #2a2a2a;
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(255, 140, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .conflict-modal-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 140, 0, 0.3);
+        }
+
+        .conflict-modal-header .icon {
+            font-size: 32px;
+        }
+
+        .conflict-modal-header h2 {
+            margin: 0;
+            color: var(--warning-color);
+            font-size: 20px;
+        }
+
+        .conflict-modal-body {
+            margin-bottom: 25px;
+        }
+
+        .conflict-modal-body p {
+            color: #f0f0f0;
+            margin: 10px 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .conflict-info-box {
+            background: rgba(255, 140, 0, 0.1);
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+
+        .conflict-info-box .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+
+        .conflict-info-box .info-label {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .conflict-info-box .info-value {
+            color: #f0f0f0;
+        }
+
+        .conflict-modal-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .conflict-modal-actions button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .conflict-btn-override {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #e74c3c 100%);
+            color: white;
+        }
+
+        .conflict-btn-override:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+        }
+
+        .conflict-btn-keep {
+            background: linear-gradient(135deg, var(--success-color) 0%, #45a049 100%);
+            color: white;
+        }
+
+        .conflict-btn-keep:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .conflict-btn-cancel {
+            grid-column: 1 / -1;
+            background: #555;
+            color: white;
+        }
+
+        .conflict-btn-cancel:hover {
+            background: #666;
+        }
     </style>
 </head>
 <body>
@@ -1017,6 +1070,52 @@
             <div class="modal-body" id="modalBody"></div>
             <div class="modal-footer">
                 <button type="button" class="modal-btn modal-btn-primary" id="modalOkBtn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFLITO DE TURMA -->
+    <div class="conflict-modal-overlay" id="conflictModalOverlay">
+        <div class="conflict-modal-content">
+            <div class="conflict-modal-header">
+                <span class="icon">⚠️</span>
+                <h2>Conflito de Reserva Detectado</h2>
+            </div>
+            <div class="conflict-modal-body">
+                <p>A turma <strong id="conflictTurma"></strong> já possui uma reserva para este ambiente, data e turno.</p>
+                
+                <div class="conflict-info-box">
+                    <div class="info-item">
+                        <span class="info-label">Ambiente:</span>
+                        <span class="info-value" id="conflictEnvironment"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Turno:</span>
+                        <span class="info-value" id="conflictShift"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Período:</span>
+                        <span class="info-value" id="conflictPeriod"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Instrutor:</span>
+                        <span class="info-value" id="conflictInstructor"></span>
+                    </div>
+                </div>
+
+                <p style="margin-top: 20px; font-weight: 600;">O que você deseja fazer?</p>
+            </div>
+
+            <div class="conflict-modal-actions">
+                <button type="button" class="conflict-btn-override" id="conflictOverrideBtn">
+                    🔄 Sobrescrever
+                </button>
+                <button type="button" class="conflict-btn-keep" id="conflictKeepBtn">
+                    ➕ Manter Ambas
+                </button>
+                <button type="button" class="conflict-btn-cancel" id="conflictCancelBtn">
+                    ❌ Cancelar
+                </button>
             </div>
         </div>
     </div>
@@ -1673,7 +1772,7 @@
                     console.log('   shift=vespertino -> verificando:', shiftsToCheck);
                     break;
                   case 'noturno':
-                    shiftsToCheck = ['noturno'];
+                    shiftsToCheck = ['integral', 'noturno'];  // ✅ CORRIGIDO: Inclui 'integral' também!
                     console.log('   shift=noturno -> verificando:', shiftsToCheck);
                     break;
                 }
@@ -1890,6 +1989,8 @@
         }
 
         // ========== SUBMETER RESERVA ==========
+        let pendingReservationData = null; // Armazenar dados para reenviar após resolução de conflito
+        
         document.getElementById('reservationForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -1938,21 +2039,32 @@
                 isAdminMode
             });
 
+            // Preparar payload
+            const payload = {
+                key_id: keyId,
+                instructor_id: isAdminMode ? selectedInstructorId : currentUser.id,
+                start_date: startDate.toISOString().split('T')[0],
+                end_date: endDate.toISOString().split('T')[0],
+                shift,
+                turma: codigoTurma,
+                unidade_curricular: unidadeCurricular,
+                motivo_detalhado: motivo,
+                created_by_admin: isAdminMode
+            };
+
+            // Se houver conflito pendente a ser resolvido, adicionar o flag
+            if (pendingReservationData && pendingReservationData.conflict_resolution) {
+                payload.conflict_resolution = pendingReservationData.conflict_resolution;
+            }
+
+            await submitReservation(payload);
+        });
+
+        // ========== SUBMETER RESERVA (FUNÇÃO AUXILIAR) ==========
+        async function submitReservation(payload) {
             showLoading(true);
 
             try {
-                const payload = {
-                    key_id: keyId,
-                    instructor_id: isAdminMode ? selectedInstructorId : currentUser.id,
-                    start_date: startDate.toISOString().split('T')[0],
-                    end_date: endDate.toISOString().split('T')[0],
-                    shift,
-                    turma: codigoTurma,
-                    unidade_curricular: unidadeCurricular,
-                    motivo_detalhado: motivo,
-                    created_by_admin: isAdminMode
-                };
-
                 console.log('🚀 Enviando requisição:', payload);
 
                 const res = await fetch(`${API_BASE}/reservations`, {
@@ -1981,8 +2093,12 @@
                     document.getElementById('reservationForm').reset();
                     startDate = null;
                     endDate = null;
+                    pendingReservationData = null; // Limpar dados pendentes
                     renderCalendar();
                     loadMyReservations();
+                } else if (res.status === 409 && data.conflict_type === 'turma_conflict') {
+                    // Exibir modal de conflito de turma
+                    showConflictModal(data.existing_reservation, payload);
                 } else {
                     showAlert(data.message || 'Erro ao criar reserva', 'error');
                 }
@@ -1992,7 +2108,71 @@
             } finally {
                 showLoading(false);
             }
-        });
+        }
+
+        // ========== EXIBIR MODAL DE CONFLITO DE TURMA ==========
+        function showConflictModal(existingReservation, currentPayload) {
+            console.log('⚠️ [CONFLICT MODAL] Exibindo modal de conflito:', existingReservation);
+
+            // Preencher informações do conflito
+            document.getElementById('conflictTurma').textContent = existingReservation.turma;
+            document.getElementById('conflictEnvironment').textContent = existingReservation.environment;
+            document.getElementById('conflictShift').textContent = translations[existingReservation.shift] || existingReservation.shift;
+            document.getElementById('conflictPeriod').textContent = `${existingReservation.start_date} a ${existingReservation.end_date}`;
+            document.getElementById('conflictInstructor').textContent = existingReservation.instructor_name;
+
+            // Armazenar dados para reenvio
+            pendingReservationData = {
+                payload: currentPayload,
+                conflict_resolution: null
+            };
+
+            // Mostrar modal
+            const overlay = document.getElementById('conflictModalOverlay');
+            overlay.classList.add('show');
+
+            // Configurar botões
+            document.getElementById('conflictOverrideBtn').onclick = () => {
+                console.log('🔄 Usuário escolheu: SOBRESCREVER');
+                console.log('   currentPayload antes do spread:', currentPayload);
+                
+                const payloadWithResolution = {...currentPayload, conflict_resolution: 'override'};
+                console.log('   currentPayload depois do spread:', payloadWithResolution);
+                console.log('   conflict_resolution foi adicionado?', payloadWithResolution.conflict_resolution);
+                
+                pendingReservationData.conflict_resolution = 'override';
+                overlay.classList.remove('show');
+                submitReservation(payloadWithResolution);
+            };
+
+            document.getElementById('conflictKeepBtn').onclick = () => {
+                console.log('➕ Usuário escolheu: MANTER AMBAS');
+                console.log('   currentPayload antes do spread:', currentPayload);
+                
+                const payloadWithResolution = {...currentPayload, conflict_resolution: 'keep_both'};
+                console.log('   currentPayload depois do spread:', payloadWithResolution);
+                console.log('   conflict_resolution foi adicionado?', payloadWithResolution.conflict_resolution);
+                
+                pendingReservationData.conflict_resolution = 'keep_both';
+                overlay.classList.remove('show');
+                submitReservation(payloadWithResolution);
+            };
+
+            document.getElementById('conflictCancelBtn').onclick = () => {
+                console.log('❌ Usuário escolheu: CANCELAR');
+                overlay.classList.remove('show');
+                pendingReservationData = null;
+                showAlert('✅ Operação cancelada', 'info');
+            };
+        }
+
+        // ========== TRADUÇÕES DE TURNOS ==========
+        const translations = {
+            'matutino': '🌅 Matutino (07:30 - 11:30)',
+            'vespertino': '☀️ Vespertino (13:30 - 17:30)',
+            'noturno': '🌙 Noturno (18:30 - 22:00)',
+            'integral': '⏰ Integral (07:30 - 22:00)'
+        };
 
         // ========== CARREGAR MINHAS RESERVAS ==========
         async function loadMyReservations() {
