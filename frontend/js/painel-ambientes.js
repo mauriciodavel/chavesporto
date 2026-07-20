@@ -264,12 +264,6 @@ function sortData(sortBy) {
         return isDescending ? -result : result;
       });
       break;
-    case 'unidade_curricular':
-      filteredData.sort((a, b) => {
-        const result = (a.unidade_curricular || '').localeCompare(b.unidade_curricular || '');
-        return isDescending ? -result : result;
-      });
-      break;
     case 'time':
       filteredData.sort((a, b) => {
         const timeA = parseTimeToMinutes(a.start_time || '');
@@ -314,7 +308,6 @@ function renderTable() {
       <td><strong>${item.turma || '-'}</strong></td>
       <td>${item.instructor_name || '-'}</td>
       <td>${item.environment || '-'}</td>
-      <td>${item.unidade_curricular || '-'}</td>
       <td>
         ${item.start_time && item.end_time 
           ? `<time>${item.start_time} - ${item.end_time}</time>` 
@@ -453,8 +446,7 @@ function setupTableHeaderClickListeners() {
       case 1: columnName = 'turma'; break;
       case 2: columnName = 'instructor'; break;
       case 3: columnName = 'environment'; break;
-      case 4: columnName = 'unidade_curricular'; break;
-      case 5: columnName = 'time'; break; // Horário
+      case 4: columnName = 'time'; break; // Horário
     }
 
     if (columnName && columnName !== 'status') {
@@ -505,8 +497,7 @@ function getColumnIndexByName(columnName) {
     case 'turma': return 1;
     case 'instructor': return 2;
     case 'environment': return 3;
-    case 'unidade_curricular': return 4;
-    case 'time': return 5;
+    case 'time': return 4;
     default: return -1;
   }
 }
